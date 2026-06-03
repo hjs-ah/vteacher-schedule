@@ -1,27 +1,25 @@
 "use client";
 import { useState } from "react";
-import { ScheduleEntry, MONTH_NAMES, DAY_LABELS, getInitials, truncate } from "./types";
+import { ScheduleEntry, MONTH_NAMES, DAY_LABELS, truncate, parseLocalDate } from "./types";
 import styles from "./MonthCalendar.module.css";
 
 type Props = {
   year: number;
   month: number;
   accent: string;
-  activeDates: Map<string, ScheduleEntry>; // dateString → entry
+  dateMap: Map<string, ScheduleEntry>; // ISO date string → entry
   onDayClick: (date: Date, entry: ScheduleEntry) => void;
+  onMonthClick: (year: number, month: number) => void;
 };
 
-export default function MonthCalendar({ year, month, accent, activeDates, onDayClick }: Props) {
+export default function MonthCalendar({ year, month, accent, dateMap, onDayClick, onMonthClick }: Props) {
   const [hoveredDate, setHoveredDate] = useState<string | null>(null);
 
-  // Build calendar grid
   const firstDay = new Date(year, month - 1, 1);
-  const lastDay = new Date(year, month, 0);
-  const startOffset = firstDay.getDay(); // 0=Sun
-  const daysInMonth = lastDay.getDate();
-
-  // Total cells: pad to complete weeks
+  const daysInMonth = new Date(year, month, 0).getDate();
+  const startOffset = firstDay.getDay();
   const totalCells = Math.ceil((startOffset + daysInMonth) / 7) * 7;
+
   const cells: (number | null)[] = [];
   for (let i = 0; i < totalCells; i++) {
     const day = i - startOffset + 1;
@@ -31,58 +29,59 @@ export default function MonthCalendar({ year, month, accent, activeDates, onDayC
   const today = new Date();
   const isCurrentMonth = today.getFullYear() === year && today.getMonth() + 1 === month;
 
+  // Count sessions this month for header hint
+  const sessionCount = [...dateMap.keys()].filter(iso => {
+    const d = parseLocalDate(iso);
+    return d.getFullYear() === year && d.getMonth() + 1 === month;
+  }).length;
+
   return (
     <div className={styles.card}>
-      {/* Month header */}
-      <div className={styles.monthHeader}>
+      <button
+        className={styles.monthHeader}
+        onClick={() => onMonthClick(year, month)}
+        aria-label={`View all sessions for ${MONTH_NAMES[month - 1]} ${year}`}
+      >
         <span className={styles.monthName}>{MONTH_NAMES[month - 1]}</span>
         <span className={styles.yearLabel}>{year}</span>
-      </div>
+        {sessionCount > 0 && <span className={styles.monthViewHint}>view month ↗</span>}
+      </button>
 
-      {/* Day-of-week labels */}
       <div className={styles.dayLabels}>
-        {DAY_LABELS.map((d) => (
-          <span key={d} className={styles.dayLabel}>{d}</span>
-        ))}
+        {DAY_LABELS.map(d => <span key={d} className={styles.dayLabel}>{d}</span>)}
       </div>
 
-      {/* Calendar grid */}
       <div className={styles.grid}>
         {cells.map((day, idx) => {
-          if (day === null) {
-            return <span key={`e-${idx}`} className={styles.emptyCell} />;
-          }
+          if (day === null) return <span key={`e-${idx}`} className={styles.emptyCell} />;
 
-          const date = new Date(year, month - 1, day);
-          const dateStr = date.toDateString();
-          const entry = activeDates.get(dateStr);
+          // Build ISO key: "2026-06-07"
+          const mm = String(month).padStart(2, "0");
+          const dd = String(day).padStart(2, "0");
+          const isoKey = `${year}-${mm}-${dd}`;
+          const entry = dateMap.get(isoKey);
           const isToday = isCurrentMonth && today.getDate() === day;
-          const isHovered = hoveredDate === dateStr;
+          const isHovered = hoveredDate === isoKey;
+          const localDate = new Date(year, month - 1, day);
 
           return (
             <div
               key={day}
               className={`${styles.dayCell} ${entry ? styles.dayCellActive : ""} ${isToday ? styles.dayCellToday : ""}`}
-              style={entry ? {
-                "--accent-color": `var(--accent-${accent})`,
-                "--accent-bg": `var(--accent-${accent}-bg)`,
-                "--accent-text": `var(--accent-${accent}-text)`,
-              } as React.CSSProperties : undefined}
-              onMouseEnter={() => entry && setHoveredDate(dateStr)}
+              style={entry ? { "--accent-bg": `var(--accent-${accent}-bg)`, "--accent-text": `var(--accent-${accent}-text)` } as React.CSSProperties : undefined}
+              onMouseEnter={() => entry && setHoveredDate(isoKey)}
               onMouseLeave={() => setHoveredDate(null)}
-              onClick={() => entry && onDayClick(date, entry)}
+              onClick={() => entry && onDayClick(localDate, entry)}
               role={entry ? "button" : undefined}
               tabIndex={entry ? 0 : undefined}
-              onKeyDown={entry ? (e) => { if (e.key === "Enter" || e.key === " ") onDayClick(date, entry); } : undefined}
+              onKeyDown={entry ? (e) => { if (e.key === "Enter" || e.key === " ") onDayClick(localDate, entry); } : undefined}
               aria-label={entry ? `${MONTH_NAMES[month - 1]} ${day}: ${entry.topic} — ${entry.facilitator}` : undefined}
             >
               <span className={styles.dayNumber}>{day}</span>
-
-              {/* Hover tooltip */}
               {entry && isHovered && (
                 <div className={styles.tooltip}>
-                  <span className={styles.tooltipTopic}>{truncate(entry.topic, 22)}</span>
-                  <span className={styles.tooltipFacilitator}>{getInitials(entry.facilitator)}</span>
+                  <span className={styles.tooltipTopic}>{truncate(entry.topic, 24)}</span>
+                  <span className={styles.tooltipFacilitator}>{entry.facilitator}</span>
                 </div>
               )}
             </div>
@@ -90,10 +89,7 @@ export default function MonthCalendar({ year, month, accent, activeDates, onDayC
         })}
       </div>
 
-      {/* Empty state for this month */}
-      {activeDates.size === 0 && (
-        <p className={styles.noEntries}>No schedule entered</p>
-      )}
+      {sessionCount === 0 && <p className={styles.noEntries}>No sessions this month</p>}
     </div>
   );
 }

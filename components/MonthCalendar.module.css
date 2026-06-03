@@ -6,12 +6,29 @@
   transition: border-color 0.15s;
 }
 
+/* Clickable month header */
 .monthHeader {
   display: flex;
   align-items: baseline;
   gap: 0.45rem;
   margin-bottom: 0.8rem;
-  padding: 0 0.1rem;
+  padding: 0.25rem 0.1rem;
+  background: none;
+  border: none;
+  cursor: pointer;
+  width: 100%;
+  text-align: left;
+  border-radius: var(--radius-sm);
+  transition: background 0.12s;
+  position: relative;
+}
+
+.monthHeader:hover {
+  background: var(--bg-hover);
+}
+
+.monthHeader:hover .monthViewHint {
+  opacity: 1;
 }
 
 .monthName {
@@ -25,6 +42,16 @@
   font-size: 0.72rem;
   color: var(--text-muted);
   font-weight: 400;
+}
+
+.monthViewHint {
+  font-size: 0.62rem;
+  color: var(--text-muted);
+  font-weight: 500;
+  margin-left: auto;
+  opacity: 0;
+  transition: opacity 0.12s;
+  letter-spacing: 0.01em;
 }
 
 .dayLabels {
@@ -69,7 +96,7 @@
 }
 
 .dayCellActive:hover {
-  filter: brightness(0.96);
+  filter: brightness(0.95);
 }
 
 .dayCellToday .dayNumber {
@@ -102,7 +129,7 @@
   color: var(--accent-text, var(--text-primary));
 }
 
-/* Hover tooltip */
+/* Tooltip — full name (#4) */
 .tooltip {
   position: absolute;
   bottom: calc(100% + 6px);
@@ -111,7 +138,7 @@
   background: var(--bg-primary);
   border: 1px solid var(--border-medium);
   border-radius: var(--radius-sm);
-  padding: 0.35rem 0.55rem;
+  padding: 0.35rem 0.6rem;
   white-space: nowrap;
   z-index: 20;
   display: flex;
@@ -128,10 +155,9 @@
 }
 
 .tooltipFacilitator {
-  font-size: 0.65rem;
-  color: var(--text-muted);
-  font-weight: 600;
-  letter-spacing: 0.04em;
+  font-size: 0.68rem;
+  color: var(--text-secondary);
+  font-weight: 500;
 }
 
 .noEntries {

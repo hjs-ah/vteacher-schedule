@@ -1,101 +1,96 @@
 import { Client, isFullPage } from "@notionhq/client";
 
 export type ClassType =
+  | "Preaching"
   | "Bible Study"
   | "Bible Foundation"
   | "Discipleship Class"
   | "New Members Class"
   | "Men's Weekly Study"
-  | "Preaching"
   | "Testimony";
 
 export type ScheduleEntry = {
   id: string;
   classType: ClassType;
-  month: number;
-  year: number;
+  date: string;        // ISO date string e.g. "2026-06-07"
   facilitator: string;
   topic: string;
   notes?: string;
 };
 
+// Maps ClassType to its Vercel env var name
+const DS_ENV: Record<ClassType, string> = {
+  "Preaching":          "NOTION_DS_PREACHING",
+  "Bible Study":        "NOTION_DS_BIBLE_STUDY",
+  "Bible Foundation":   "NOTION_DS_BIBLE_FOUNDATION",
+  "Discipleship Class": "NOTION_DS_DISCIPLESHIP",
+  "New Members Class":  "NOTION_DS_NEW_MEMBERS",
+  "Men's Weekly Study": "NOTION_DS_MENS_STUDY",
+  "Testimony":          "NOTION_DS_TESTIMONY",
+};
+
 const notion = new Client({ auth: process.env.NOTION_TOKEN });
 
-// The collection/data-source ID for the Teaching Schedule DB
-const DATA_SOURCE_ID = process.env.NOTION_DATA_SOURCE_ID ?? process.env.NOTION_DATABASE_ID ?? "";
-
-function getRichText(props: Record<string, unknown>, key: string): string {
-  const prop = props[key] as { type?: string; rich_text?: Array<{ plain_text: string }> } | undefined;
-  if (!prop || prop.type !== "rich_text") return "";
-  return prop.rich_text?.[0]?.plain_text ?? "";
-}
-
-function getTitle(props: Record<string, unknown>, key: string): string {
-  const prop = props[key] as { title?: Array<{ plain_text: string }> } | undefined;
-  return prop?.title?.[0]?.plain_text ?? "";
-}
-
-function getSelect(props: Record<string, unknown>, key: string): string {
-  const prop = props[key] as { type?: string; select?: { name: string } } | undefined;
-  if (!prop || prop.type !== "select") return "";
-  return prop.select?.name ?? "";
-}
-
-function getNumber(props: Record<string, unknown>, key: string): number {
-  const prop = props[key] as { type?: string; number?: number } | undefined;
-  if (!prop || prop.type !== "number") return 0;
-  return prop.number ?? 0;
-}
-
-async function queryAllPages(): Promise<unknown[]> {
-  const allResults: unknown[] = [];
+async function queryDataSource(dsId: string): Promise<unknown[]> {
+  const all: unknown[] = [];
   let cursor: string | undefined;
-
   do {
     // eslint-disable-next-line @typescript-eslint/no-explicit-any
-    const response = await (notion.dataSources as any).query({
-      data_source_id: DATA_SOURCE_ID,
+    const res = await (notion.dataSources as any).query({
+      data_source_id: dsId,
       page_size: 100,
+      sorts: [{ property: "Date", direction: "ascending" }],
       ...(cursor ? { start_cursor: cursor } : {}),
-    }) as { results: unknown[]; next_cursor?: string; has_more?: boolean };
-
-    allResults.push(...response.results);
-    cursor = response.has_more ? response.next_cursor : undefined;
+    }) as { results: unknown[]; has_more?: boolean; next_cursor?: string };
+    all.push(...res.results);
+    cursor = res.has_more ? res.next_cursor : undefined;
   } while (cursor);
-
-  return allResults;
+  return all;
 }
 
-export async function getScheduleEntries(): Promise<ScheduleEntry[]> {
-  if (!DATA_SOURCE_ID) throw new Error("NOTION_DATABASE_ID is not set");
-
-  const pages = await queryAllPages();
+function extractEntries(pages: unknown[], classType: ClassType): ScheduleEntry[] {
   const entries: ScheduleEntry[] = [];
-
   for (const page of pages) {
     if (!isFullPage(page as Parameters<typeof isFullPage>[0])) continue;
-    const p = page as { properties: Record<string, unknown> };
-    const props = p.properties;
+    const props = (page as { properties: Record<string, unknown> }).properties;
 
-    const topic = getTitle(props, "Topic");
-    const facilitator = getRichText(props, "Facilitator");
-    const classType = getSelect(props, "Class Type") as ClassType;
-    const month = getNumber(props, "Month");
-    const year = getNumber(props, "Year");
-    const notes = getRichText(props, "Notes");
+    const titleProp = props["Topic"] as { title?: Array<{ plain_text: string }> } | undefined;
+    const topic = titleProp?.title?.[0]?.plain_text ?? "";
 
-    if (!facilitator || !month || !year || !classType) continue;
+    const facProp = props["Facilitator"] as { type?: string; rich_text?: Array<{ plain_text: string }> } | undefined;
+    const facilitator = facProp?.rich_text?.[0]?.plain_text ?? "";
+
+    const dateProp = props["Date"] as { type?: string; date?: { start: string } } | undefined;
+    const date = dateProp?.date?.start ?? "";
+
+    const notesProp = props["Notes"] as { type?: string; rich_text?: Array<{ plain_text: string }> } | undefined;
+    const notes = notesProp?.rich_text?.[0]?.plain_text ?? "";
+
+    if (!facilitator || !date) continue;
 
     entries.push({
       id: (page as { id: string }).id,
       classType,
-      month,
-      year,
+      date,
       facilitator,
-      topic: topic || "Assignment",
+      topic: topic || "Session",
       notes,
     });
   }
-
   return entries;
+}
+
+export async function getScheduleEntries(): Promise<ScheduleEntry[]> {
+  const classTypes = Object.keys(DS_ENV) as ClassType[];
+
+  const results = await Promise.allSettled(
+    classTypes.map(async (ct) => {
+      const dsId = process.env[DS_ENV[ct]];
+      if (!dsId) return [];
+      const pages = await queryDataSource(dsId);
+      return extractEntries(pages, ct);
+    })
+  );
+
+  return results.flatMap((r) => (r.status === "fulfilled" ? r.value : []));
 }
