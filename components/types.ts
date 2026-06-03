@@ -54,10 +54,10 @@ export const CLASS_LABELS: ClassType[] = [
   "Preaching",
   "Bible Study",
   "Bible Foundation",
-  "Discipleship Class",
-  "Testimony",
   "New Members Class",
+  "Discipleship Class",
   "Men's Weekly Study",
+  "Testimony",
 ];
 
 // All known ministers for the roster filter
