@@ -2,7 +2,7 @@
 import { useState, useEffect, useCallback } from "react";
 import {
   ScheduleEntry, ClassType, CLASS_LABELS, FULL_WEEKDAY,
-  CLASS_ACCENT, MONTH_NAMES, parseLocalDate,
+  CLASS_ACCENT, MONTH_NAMES, parseLocalDate, expandEntryDates,
 } from "./types";
 import MonthCalendar from "./MonthCalendar";
 import EventModal from "./EventModal";
@@ -190,11 +190,17 @@ export default function ScheduleApp() {
           const classEntries = entries.filter(e => e.classType === classType);
           if (classEntries.length === 0) return null;
 
-          // Build a date→entry map for quick calendar lookup
+          // Expand range entries into individual date keys, then build date→entry map
           const dateMap = new Map<string, ScheduleEntry>();
           for (const e of classEntries) {
-            dateMap.set(e.date, e); // ISO key e.g. "2026-06-07"
+            for (const iso of expandEntryDates(e)) {
+              // Don't overwrite a more-specific single-date entry with a range entry
+              if (!dateMap.has(iso) || !e.dateEnd) {
+                dateMap.set(iso, e);
+              }
+            }
           }
+          const totalSessions = dateMap.size;
 
           return (
             <section key={classType} className={styles.classSection}>
@@ -206,7 +212,7 @@ export default function ScheduleApp() {
                     {fullDay}
                   </span>
                 )}
-                <span className={styles.entryCount}>{classEntries.length} session{classEntries.length !== 1 ? "s" : ""}</span>
+                <span className={styles.entryCount}>{totalSessions} session{totalSessions !== 1 ? "s" : ""}</span>
               </div>
               <div className={styles.monthGrid} style={{ gridTemplateColumns:`repeat(${monthCount}, 1fr)` }}>
                 {monthSlots.map(({ year, month }) => (

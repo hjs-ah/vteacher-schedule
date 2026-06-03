@@ -12,13 +12,13 @@ export type ClassType =
 export type ScheduleEntry = {
   id: string;
   classType: ClassType;
-  date: string;        // ISO date string e.g. "2026-06-07"
+  date: string;
+  dateEnd?: string;
   facilitator: string;
   topic: string;
   notes?: string;
 };
 
-// Maps ClassType to its Vercel env var name
 const DS_ENV: Record<ClassType, string> = {
   "Preaching":          "NOTION_DS_PREACHING",
   "Bible Study":        "NOTION_DS_BIBLE_STUDY",
@@ -57,13 +57,15 @@ function extractEntries(pages: unknown[], classType: ClassType): ScheduleEntry[]
     const titleProp = props["Topic"] as { title?: Array<{ plain_text: string }> } | undefined;
     const topic = titleProp?.title?.[0]?.plain_text ?? "";
 
-    const facProp = props["Facilitator"] as { type?: string; rich_text?: Array<{ plain_text: string }> } | undefined;
+    const facProp = props["Facilitator"] as { rich_text?: Array<{ plain_text: string }> } | undefined;
     const facilitator = facProp?.rich_text?.[0]?.plain_text ?? "";
 
-    const dateProp = props["Date"] as { type?: string; date?: { start: string } } | undefined;
+    // Capture both start and end dates
+    const dateProp = props["Date"] as { date?: { start: string; end?: string | null } } | undefined;
     const date = dateProp?.date?.start ?? "";
+    const dateEnd = dateProp?.date?.end ?? undefined;
 
-    const notesProp = props["Notes"] as { type?: string; rich_text?: Array<{ plain_text: string }> } | undefined;
+    const notesProp = props["Notes"] as { rich_text?: Array<{ plain_text: string }> } | undefined;
     const notes = notesProp?.rich_text?.[0]?.plain_text ?? "";
 
     if (!facilitator || !date) continue;
@@ -72,6 +74,7 @@ function extractEntries(pages: unknown[], classType: ClassType): ScheduleEntry[]
       id: (page as { id: string }).id,
       classType,
       date,
+      ...(dateEnd ? { dateEnd } : {}),
       facilitator,
       topic: topic || "Session",
       notes,
@@ -82,7 +85,6 @@ function extractEntries(pages: unknown[], classType: ClassType): ScheduleEntry[]
 
 export async function getScheduleEntries(): Promise<ScheduleEntry[]> {
   const classTypes = Object.keys(DS_ENV) as ClassType[];
-
   const results = await Promise.allSettled(
     classTypes.map(async (ct) => {
       const dsId = process.env[DS_ENV[ct]];
@@ -91,6 +93,5 @@ export async function getScheduleEntries(): Promise<ScheduleEntry[]> {
       return extractEntries(pages, ct);
     })
   );
-
   return results.flatMap((r) => (r.status === "fulfilled" ? r.value : []));
 }
