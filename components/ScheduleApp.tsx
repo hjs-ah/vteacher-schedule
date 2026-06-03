@@ -1,17 +1,15 @@
 "use client";
 import { useState, useEffect, useCallback } from "react";
 import {
-  ScheduleEntry, ClassType, CLASS_LABELS, CLASS_WEEKDAY, CLASS_ACCENT,
-  MONTH_NAMES, DAY_LABELS, getWeekdayDatesInMonth, getInitials, truncate,
+  ScheduleEntry, ClassType, CLASS_LABELS, CLASS_WEEKDAY, FULL_WEEKDAY,
+  CLASS_ACCENT, MONTH_NAMES, getWeekdayDatesInMonth,
 } from "./types";
 import MonthCalendar from "./MonthCalendar";
 import EventModal from "./EventModal";
 import styles from "./ScheduleApp.module.css";
 
-type ActiveEvent = {
-  date: Date;
-  entry: ScheduleEntry;
-};
+type ActiveEvent = { date: Date; entry: ScheduleEntry };
+type DiagStatus = "idle" | "checking" | "ok" | "error";
 
 export default function ScheduleApp() {
   const [theme, setTheme] = useState<"light" | "dark">("light");
@@ -22,12 +20,15 @@ export default function ScheduleApp() {
   const [error, setError] = useState<string | null>(null);
   const [activeEvent, setActiveEvent] = useState<ActiveEvent | null>(null);
 
-  // Base month: current month
+  // Diagnostic state
+  const [diagStatus, setDiagStatus] = useState<DiagStatus>("idle");
+  const [diagMsg, setDiagMsg] = useState<string>("");
+  const [showDiag, setShowDiag] = useState(false);
+
   const now = new Date();
   const baseYear = now.getFullYear();
-  const baseMonth = now.getMonth() + 1; // 1-indexed
+  const baseMonth = now.getMonth() + 1;
 
-  // Build list of {year, month} to display
   const monthSlots = Array.from({ length: monthCount }, (_, i) => {
     const totalMonth = baseMonth + i;
     const year = baseYear + Math.floor((totalMonth - 1) / 12);
@@ -35,11 +36,13 @@ export default function ScheduleApp() {
     return { year, month };
   });
 
-  // Load theme from localStorage on mount
   useEffect(() => {
     try {
       const saved = localStorage.getItem("vow-theme") as "light" | "dark" | null;
-      if (saved) setTheme(saved);
+      if (saved) {
+        setTheme(saved);
+        document.documentElement.setAttribute("data-theme", saved);
+      }
     } catch {}
   }, []);
 
@@ -50,18 +53,22 @@ export default function ScheduleApp() {
     try { localStorage.setItem("vow-theme", next); } catch {}
   };
 
-  // Fetch schedule from API
   const fetchSchedule = useCallback(async () => {
     setLoading(true);
     setError(null);
     try {
       const res = await fetch("/api/schedule");
-      if (!res.ok) throw new Error("Failed to load schedule");
+      if (!res.ok) {
+        const body = await res.text();
+        throw new Error(`HTTP ${res.status}: ${body}`);
+      }
       const data = await res.json();
+      if (data.error) throw new Error(data.error);
       setEntries(data.entries ?? []);
     } catch (e) {
-      setError("Unable to load schedule. Please try again later.");
-      console.error(e);
+      const msg = e instanceof Error ? e.message : String(e);
+      setError(msg);
+      console.error("Schedule fetch error:", e);
     } finally {
       setLoading(false);
     }
@@ -69,10 +76,37 @@ export default function ScheduleApp() {
 
   useEffect(() => { fetchSchedule(); }, [fetchSchedule]);
 
-  // Classes to display based on filter
-  const visibleClasses: ClassType[] = classFilter === "All"
-    ? CLASS_LABELS
-    : [classFilter];
+  // Diagnostic check
+  const runDiagnostic = async () => {
+    setDiagStatus("checking");
+    setShowDiag(true);
+    setDiagMsg("Checking API…");
+    try {
+      const res = await fetch("/api/schedule");
+      const raw = await res.text();
+      let parsed: { entries?: ScheduleEntry[]; error?: string } = {};
+      try { parsed = JSON.parse(raw); } catch { throw new Error("API returned non-JSON: " + raw.slice(0, 200)); }
+
+      if (!res.ok || parsed.error) {
+        throw new Error(parsed.error ?? `HTTP ${res.status}`);
+      }
+
+      const count = parsed.entries?.length ?? 0;
+      const types = [...new Set(parsed.entries?.map(e => e.classType) ?? [])];
+      const facilitators = [...new Set(parsed.entries?.map(e => e.facilitator) ?? [])].length;
+
+      setDiagMsg(
+        `✓ API reachable\n✓ ${count} entries loaded\n✓ ${facilitators} facilitators\n✓ Class types: ${types.join(", ") || "none"}`
+      );
+      setDiagStatus("ok");
+    } catch (e) {
+      const msg = e instanceof Error ? e.message : String(e);
+      setDiagMsg(`✗ ${msg}\n\nCheck: NOTION_TOKEN and NOTION_DATABASE_ID are set in Vercel env vars.`);
+      setDiagStatus("error");
+    }
+  };
+
+  const visibleClasses: ClassType[] = classFilter === "All" ? CLASS_LABELS : [classFilter];
 
   return (
     <div className={styles.root}>
@@ -80,7 +114,6 @@ export default function ScheduleApp() {
       <header className={styles.header}>
         <div className={styles.headerInner}>
           <div className={styles.headerLeft}>
-            <span className={styles.logoMark}>✦</span>
             <div>
               <h1 className={styles.siteTitle}>VOW Center</h1>
               <p className={styles.siteSubtitle}>Teaching Schedule</p>
@@ -115,17 +148,33 @@ export default function ScheduleApp() {
             >
               {theme === "light" ? "🌙" : "☀️"}
             </button>
+            <button
+              className={styles.diagBtn}
+              onClick={runDiagnostic}
+              aria-label="Run connection diagnostic"
+              title="Check data connection"
+            >
+              {diagStatus === "checking" ? "…" : diagStatus === "ok" ? "✓" : diagStatus === "error" ? "!" : "⚙"}
+            </button>
           </div>
         </div>
       </header>
 
+      {/* Diagnostic panel */}
+      {showDiag && (
+        <div className={`${styles.diagPanel} ${diagStatus === "ok" ? styles.diagOk : diagStatus === "error" ? styles.diagError : styles.diagChecking}`}>
+          <div className={styles.diagInner}>
+            <pre className={styles.diagMsg}>{diagMsg || "Running…"}</pre>
+            <button className={styles.diagClose} onClick={() => setShowDiag(false)}>Dismiss</button>
+          </div>
+        </div>
+      )}
+
       {/* Legend */}
       <div className={styles.legendBar}>
         {CLASS_LABELS.map((c) => (
-          <span key={c} className={styles.legendItem} data-accent={CLASS_ACCENT[c]}>
-            <span className={styles.legendDot} style={{
-              background: `var(--accent-${CLASS_ACCENT[c]})`,
-            }} />
+          <span key={c} className={styles.legendItem}>
+            <span className={styles.legendDot} style={{ background: `var(--accent-${CLASS_ACCENT[c]})` }} />
             {c}
           </span>
         ))}
@@ -134,53 +183,75 @@ export default function ScheduleApp() {
       {/* Main content */}
       <main className={styles.main}>
         {loading && (
-          <div className={styles.statusMsg}>Loading schedule…</div>
+          <div className={styles.statusMsg}>
+            <span className={styles.spinner} />
+            Loading schedule…
+          </div>
         )}
-        {error && (
-          <div className={styles.errorMsg}>{error}</div>
+        {error && !loading && (
+          <div className={styles.errorMsg}>
+            <strong>Could not load schedule</strong>
+            <p>{error}</p>
+            <div style={{ display: "flex", gap: "0.6rem", marginTop: "0.75rem" }}>
+              <button className={styles.retryBtn} onClick={fetchSchedule}>Retry</button>
+              <button className={styles.retryBtn} onClick={runDiagnostic}>Run Diagnostic</button>
+            </div>
+          </div>
         )}
-        {!loading && !error && (
+        {!loading && !error && entries.length === 0 && (
+          <div className={styles.emptyState}>
+            <p>No schedule entries found.</p>
+            <p style={{ fontSize: "0.8rem", marginTop: "0.4rem", opacity: 0.7 }}>
+              Make sure NOTION_TOKEN and NOTION_DATABASE_ID are set and the integration is connected to the database.
+            </p>
+            <button className={styles.retryBtn} style={{ marginTop: "0.75rem" }} onClick={runDiagnostic}>Run Diagnostic</button>
+          </div>
+        )}
+        {!loading && !error && entries.length > 0 && (
           <>
             {visibleClasses.map((classType) => {
               const weekday = CLASS_WEEKDAY[classType];
               const accent = CLASS_ACCENT[classType];
+              const fullDay = FULL_WEEKDAY[classType];
               const classEntries = entries.filter((e) => e.classType === classType);
+
+              if (classFilter === "All" && classEntries.length === 0) return null;
 
               return (
                 <section key={classType} className={styles.classSection}>
-                  <div className={styles.classSectionHeader} data-accent={accent}>
+                  <div className={styles.classSectionHeader}>
                     <span className={styles.classDot} style={{ background: `var(--accent-${accent})` }} />
                     <h2 className={styles.classSectionTitle}>{classType}</h2>
-                    {weekday >= 0 && (
+                    {fullDay && (
                       <span className={styles.classDayBadge} style={{
                         background: `var(--accent-${accent}-bg)`,
                         color: `var(--accent-${accent}-text)`,
                       }}>
-                        {DAY_LABELS[weekday]}s
+                        {fullDay}
                       </span>
                     )}
+                    <span className={styles.entryCount}>{classEntries.length} entr{classEntries.length === 1 ? "y" : "ies"}</span>
                   </div>
 
                   <div className={styles.monthGrid} style={{
                     gridTemplateColumns: `repeat(${monthCount}, 1fr)`,
                   }}>
                     {monthSlots.map(({ year, month }) => {
-                      // Build calendar event map for this class + month
-                      const entry = classEntries.find(
-                        (e) => e.month === month && e.year === year
-                      );
-                      // For weekday-fixed classes: auto-populate all matching dates
                       const activeDates: Map<string, ScheduleEntry> = new Map();
-                      if (entry && weekday >= 0) {
-                        const dates = getWeekdayDatesInMonth(year, month, weekday);
-                        dates.forEach((d) => {
-                          activeDates.set(d.toDateString(), entry);
-                        });
-                      }
-                      // For date-specific classes (New Members, Men's Weekly)
-                      if (weekday < 0 && entry) {
-                        // These will store specific dates via a "Date" property — not yet fetched
-                        // Placeholder: show entry on the 1st of month for now
+
+                      if (weekday >= 0) {
+                        // For Preaching/Testimony: multiple facilitators can share a month
+                        // show first matched entry on each weekday occurrence
+                        const monthEntries = classEntries.filter(
+                          (e) => e.month === month && e.year === year
+                        );
+                        if (monthEntries.length > 0) {
+                          const dates = getWeekdayDatesInMonth(year, month, weekday);
+                          dates.forEach((d, i) => {
+                            const entry = monthEntries[i % monthEntries.length];
+                            activeDates.set(d.toDateString(), entry);
+                          });
+                        }
                       }
 
                       return (
@@ -202,12 +273,13 @@ export default function ScheduleApp() {
         )}
       </main>
 
-      {/* Footer */}
       <footer className={styles.footer}>
-        <p>Verity Outreach Worship Center · Schedule updated regularly · All times are Eastern</p>
+        <p>Verity Outreach Worship Center · Schedule updated every 5 minutes · All times Eastern</p>
+        {!loading && !error && (
+          <p className={styles.footerCount}>{entries.length} assignments loaded</p>
+        )}
       </footer>
 
-      {/* Event modal */}
       {activeEvent && (
         <EventModal
           date={activeEvent.date}

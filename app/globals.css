@@ -34,6 +34,14 @@
   --accent-mens-study-bg: #FAECE7;
   --accent-mens-study-text: #4A1B0C;
 
+  --accent-preaching: #854F0B;
+  --accent-preaching-bg: #FAEEDA;
+  --accent-preaching-text: #633806;
+
+  --accent-testimony: #993556;
+  --accent-testimony-bg: #FBEAF0;
+  --accent-testimony-text: #4B1528;
+
   --radius-sm: 6px;
   --radius-md: 10px;
   --radius-lg: 14px;
@@ -72,6 +80,14 @@
   --accent-mens-study: #F0997B;
   --accent-mens-study-bg: #2a110a;
   --accent-mens-study-text: #F5C4B3;
+
+  --accent-preaching: #EF9F27;
+  --accent-preaching-bg: #2d1f08;
+  --accent-preaching-text: #FAC775;
+
+  --accent-testimony: #ED93B1;
+  --accent-testimony-bg: #2a0f1c;
+  --accent-testimony-text: #F4C0D1;
 }
 
 * {
