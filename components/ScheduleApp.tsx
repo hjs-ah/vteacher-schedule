@@ -140,35 +140,28 @@ export default function ScheduleApp() {
   }, [filteredEntries]);
 
   const handleMonthClick = (year: number, month: number) => {
-    const monthEntries: ScheduleEntry[] = [];
-    const seen = new Set<string>();
-    for (const [iso, dayEntries] of unifiedDateMap.entries()) {
-      const d = parseLocalDate(iso);
-      if (d.getFullYear() === year && d.getMonth() + 1 === month) {
-        for (const e of dayEntries) {
-          if (!seen.has(e.id + iso)) {
-            monthEntries.push(e);
-            seen.add(e.id + iso);
-          }
-        }
+    // Pass original entries (with dateEnd) so modal can collapse range rows
+    const monthEntries = filteredEntries.filter(e => {
+      const d = parseLocalDate(e.date);
+      // Range entry: include if it overlaps this month
+      if (e.dateEnd) {
+        const start = parseLocalDate(e.date);
+        const end = parseLocalDate(e.dateEnd);
+        const mStart = new Date(year, month - 1, 1);
+        const mEnd = new Date(year, month, 0);
+        return start <= mEnd && end >= mStart;
       }
-    }
+      return d.getFullYear() === year && d.getMonth() + 1 === month;
+    });
     setMonthModal({ year, month, entries: monthEntries });
   };
 
   const anyFilterActive = classFilters.size > 0 || ministerFilter !== null;
   const totalSessions = [...unifiedDateMap.values()].reduce((sum, arr) => sum + arr.length, 0);
 
-  // List view needs entries with already-expanded dates
-  const expandedForList = useMemo(() => {
-    const result: ScheduleEntry[] = [];
-    for (const [iso, dayEntries] of unifiedDateMap.entries()) {
-      for (const e of dayEntries) {
-        result.push({ ...e, date: iso, dateEnd: undefined });
-      }
-    }
-    return result;
-  }, [unifiedDateMap]);
+  // List view receives original filtered entries (with dateEnd intact)
+  // so it can collapse range entries into month-level summary rows
+  const listEntries = filteredEntries;
 
   return (
     <div className={styles.root}>
@@ -199,18 +192,16 @@ export default function ScheduleApp() {
               </button>
             </div>
 
-            {/* Month count (calendar only) */}
-            {viewMode === "calendar" && (
-              <div className={styles.monthToggle}>
-                {([1, 2, 3, 6] as const).map(n => (
-                  <button
-                    key={n}
-                    className={monthCount === n ? styles.toggleBtnActive : styles.toggleBtn}
-                    onClick={() => handleSetMonthCount(n)}
-                  >{n} mo</button>
-                ))}
-              </div>
-            )}
+            {/* Month count — visible in both views */}
+            <div className={styles.monthToggle}>
+              {([1, 2, 3, 6] as const).map(n => (
+                <button
+                  key={n}
+                  className={monthCount === n ? styles.toggleBtnActive : styles.toggleBtn}
+                  onClick={() => handleSetMonthCount(n)}
+                >{n} mo</button>
+              ))}
+            </div>
 
             <button className={styles.themeBtn} onClick={toggleTheme} aria-label="Toggle theme">
               {theme === "light" ? "🌙" : "☀️"}
@@ -382,7 +373,7 @@ export default function ScheduleApp() {
 
         {!loading && !error && entries.length > 0 && viewMode === "list" && (
           <ListView
-            entries={expandedForList}
+            entries={listEntries}
             monthSlots={monthSlots}
             onEntryClick={(date, dayEntries) => setActiveEvent({ date, entries: dayEntries })}
           />

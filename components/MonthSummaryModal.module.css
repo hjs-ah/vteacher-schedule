@@ -182,3 +182,86 @@
   color: var(--text-muted);
   font-style: italic;
 }
+
+/* ── Ownership / range section ── */
+.ownerSection {
+  margin-bottom: 1rem;
+}
+
+.specificSection {}
+
+.sectionLabel {
+  display: block;
+  font-size: 0.6rem;
+  font-weight: 700;
+  color: var(--text-muted);
+  text-transform: uppercase;
+  letter-spacing: 0.08em;
+  margin-bottom: 0.45rem;
+}
+
+.ownerRow {
+  display: flex;
+  align-items: stretch;
+  gap: 0.6rem;
+  padding: 0.55rem 0.7rem;
+  background: var(--bg-secondary);
+  border-radius: 4px;
+  border: 1px solid var(--border-light);
+  margin-bottom: 3px;
+}
+
+.ownerBar {
+  width: 3px;
+  border-radius: 2px;
+  flex-shrink: 0;
+  align-self: stretch;
+}
+
+.ownerInfo {
+  display: flex;
+  flex-direction: column;
+  gap: 0.1rem;
+  flex: 1;
+}
+
+.ownerTop {
+  display: flex;
+  align-items: center;
+  gap: 0.45rem;
+  flex-wrap: wrap;
+}
+
+.ownerClass {
+  font-size: 0.6rem;
+  font-weight: 700;
+  color: var(--text-muted);
+  text-transform: uppercase;
+  letter-spacing: 0.06em;
+}
+
+.ownerDayTag {
+  font-size: 0.65rem;
+  font-weight: 500;
+  color: var(--text-muted);
+  padding: 0.08rem 0.38rem;
+  background: var(--bg-tertiary);
+  border-radius: 3px;
+}
+
+.ownerFacilitator {
+  font-size: 0.85rem;
+  font-weight: 600;
+  color: var(--text-primary);
+}
+
+.ownerTopic {
+  font-size: 0.72rem;
+  color: var(--text-secondary);
+}
+
+.ownerNotes {
+  font-size: 0.67rem;
+  color: var(--text-muted);
+  font-style: italic;
+}
