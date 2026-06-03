@@ -19,7 +19,7 @@ type DiagStatus = "idle" | "checking" | "ok" | "error";
 export default function ScheduleApp() {
   const [theme, setTheme] = useState<"light" | "dark">("light");
   const [viewMode, setViewMode] = useState<ViewMode>("calendar");
-  const [monthCount, setMonthCount] = useState<1 | 2 | 3>(1);
+  const [monthCount, setMonthCount] = useState<1 | 2 | 3 | 6>(1);
   const [classFilters, setClassFilters] = useState<Set<ClassType>>(new Set());
   const [ministerFilter, setMinisterFilter] = useState<string | null>(null);
   const [entries, setEntries] = useState<ScheduleEntry[]>([]);
@@ -36,15 +36,18 @@ export default function ScheduleApp() {
   const baseYear = now.getFullYear();
   const baseMonth = now.getMonth() + 1;
 
+  // monthOffset allows prev/next navigation in single-month view
+  const [monthOffset, setMonthOffset] = useState(0);
+
   const monthSlots = useMemo(() =>
     Array.from({ length: monthCount }, (_, i) => {
-      const total = baseMonth + i;
+      const total = baseMonth + monthOffset + i;
       return {
         year: baseYear + Math.floor((total - 1) / 12),
         month: ((total - 1) % 12) + 1,
       };
     }),
-    [monthCount, baseYear, baseMonth]
+    [monthCount, monthOffset, baseYear, baseMonth]
   );
 
   useEffect(() => {
@@ -68,6 +71,9 @@ export default function ScheduleApp() {
       return next;
     });
   };
+
+  // Reset offset when switching month count
+  const handleSetMonthCount = (n: 1 | 2 | 3 | 6) => { setMonthCount(n); setMonthOffset(0); };
 
   const fetchSchedule = useCallback(async () => {
     setLoading(true); setError(null);
@@ -196,11 +202,11 @@ export default function ScheduleApp() {
             {/* Month count (calendar only) */}
             {viewMode === "calendar" && (
               <div className={styles.monthToggle}>
-                {([1, 2, 3] as const).map(n => (
+                {([1, 2, 3, 6] as const).map(n => (
                   <button
                     key={n}
                     className={monthCount === n ? styles.toggleBtnActive : styles.toggleBtn}
-                    onClick={() => setMonthCount(n)}
+                    onClick={() => handleSetMonthCount(n)}
                   >{n} mo</button>
                 ))}
               </div>
@@ -335,28 +341,43 @@ export default function ScheduleApp() {
         )}
 
         {!loading && !error && entries.length > 0 && viewMode === "calendar" && (
-          <div className={styles.calendarGrid} style={{ gridTemplateColumns: `repeat(${monthCount}, 1fr)` }}>
-            {monthSlots.map(({ year, month }) => {
-              // Slice dateMap to only this month's dates
-              const monthMap = new Map<string, ScheduleEntry[]>();
-              for (const [iso, dayEntries] of unifiedDateMap.entries()) {
-                const d = parseLocalDate(iso);
-                if (d.getFullYear() === year && d.getMonth() + 1 === month) {
-                  monthMap.set(iso, dayEntries);
+          <>
+            <div className={styles.calendarGrid} style={{ gridTemplateColumns: `repeat(${Math.min(monthCount, 3)}, 1fr)` }}>
+              {monthSlots.map(({ year, month }) => {
+                const monthMap = new Map<string, ScheduleEntry[]>();
+                for (const [iso, dayEntries] of unifiedDateMap.entries()) {
+                  const d = parseLocalDate(iso);
+                  if (d.getFullYear() === year && d.getMonth() + 1 === month) {
+                    monthMap.set(iso, dayEntries);
+                  }
                 }
-              }
-              return (
-                <UnifiedCalendar
-                  key={`${year}-${month}`}
-                  year={year}
-                  month={month}
-                  dateMap={monthMap}
-                  onDayClick={(date, dayEntries) => setActiveEvent({ date, entries: dayEntries })}
-                  onMonthClick={handleMonthClick}
-                />
-              );
-            })}
-          </div>
+                return (
+                  <UnifiedCalendar
+                    key={`${year}-${month}`}
+                    year={year}
+                    month={month}
+                    dateMap={monthMap}
+                    onDayClick={(date, dayEntries) => setActiveEvent({ date, entries: dayEntries })}
+                    onMonthClick={handleMonthClick}
+                  />
+                );
+              })}
+            </div>
+            {monthCount === 1 && (
+              <div className={styles.calNav}>
+                <button className={styles.calNavBtn} onClick={() => setMonthOffset(o => o - 1)} aria-label="Previous month">
+                  ← Prev
+                </button>
+                <span className={styles.calNavLabel}>
+                  {MONTH_NAMES[(((baseMonth + monthOffset - 1) % 12) + 12) % 12]}{" "}
+                  {baseYear + Math.floor((baseMonth + monthOffset - 1) / 12)}
+                </span>
+                <button className={styles.calNavBtn} onClick={() => setMonthOffset(o => o + 1)} aria-label="Next month">
+                  Next →
+                </button>
+              </div>
+            )}
+          </>
         )}
 
         {!loading && !error && entries.length > 0 && viewMode === "list" && (

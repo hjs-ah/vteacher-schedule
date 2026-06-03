@@ -69,7 +69,7 @@
   display: block;
   width: 6px;
   height: 6px;
-  border-radius: 50%;
+  border-radius: 4px;
   background: var(--accent-bible-foundation);
   margin-bottom: 0.2rem;
   flex-shrink: 0;
@@ -115,7 +115,7 @@
 /* Left color bar */
 .classBar {
   width: 3px;
-  border-radius: 99px;
+  border-radius: 4px;
   flex-shrink: 0;
   align-self: stretch;
   min-height: 100%;

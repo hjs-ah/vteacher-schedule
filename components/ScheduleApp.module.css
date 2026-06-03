@@ -178,7 +178,7 @@
   font-size: 0.72rem;
   font-weight: 500;
   padding: 0.28rem 0.65rem;
-  border-radius: 99px;
+  border-radius: 4px;
   border: 1px solid var(--border-medium);
   background: var(--bg-primary);
   color: var(--text-secondary);
@@ -188,13 +188,13 @@
 }
 .chip:hover { border-color: var(--text-muted); color: var(--text-primary); }
 .chipActive { font-weight: 600; border-width: 1.5px; }
-.chipDot { width: 6px; height: 6px; border-radius: 50%; flex-shrink: 0; }
+.chipDot { width: 6px; height: 6px; border-radius: 2px; flex-shrink: 0; }
 .clearBtn {
   font-family: 'DM Sans', sans-serif;
   font-size: 0.68rem;
   font-weight: 600;
   padding: 0.28rem 0.6rem;
-  border-radius: 99px;
+  border-radius: 4px;
   border: 1px solid var(--border-medium);
   background: var(--bg-tertiary);
   color: var(--text-secondary);
@@ -224,7 +224,7 @@
 .rosterPill {
   font-size: 0.68rem;
   padding: 0.12rem 0.45rem;
-  border-radius: 99px;
+  border-radius: 4px;
   background: var(--accent-bible-foundation-bg);
   color: var(--accent-bible-foundation-text);
   text-transform: none;
@@ -246,7 +246,7 @@
   font-size: 0.72rem;
   font-weight: 500;
   padding: 0.25rem 0.6rem 0.25rem 0.3rem;
-  border-radius: 99px;
+  border-radius: 4px;
   border: 1px solid var(--border-medium);
   background: var(--bg-primary);
   color: var(--text-secondary);
@@ -259,7 +259,7 @@
 .rosterInitials {
   width: 19px;
   height: 19px;
-  border-radius: 50%;
+  border-radius: 3px;
   background: var(--bg-tertiary);
   color: var(--text-muted);
   font-size: 0.56rem;
@@ -297,7 +297,7 @@
 .legendDot {
   width: 7px;
   height: 7px;
-  border-radius: 50%;
+  border-radius: 2px;
 }
 .sessionTotal {
   font-size: 0.68rem;
@@ -335,7 +335,7 @@
   height: 14px;
   border: 2px solid var(--border-medium);
   border-top-color: var(--text-secondary);
-  border-radius: 50%;
+  border-radius: 4px;
   animation: spin 0.7s linear infinite;
   flex-shrink: 0;
 }
@@ -391,4 +391,39 @@
   .headerInner { flex-direction: column; align-items: flex-start; gap: 0.65rem; }
   .calendarGrid { grid-template-columns: 1fr !important; }
   .legend { gap: 0.5rem; }
+}
+
+/* ── Single-month prev/next navigation ── */
+.calNav {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  margin-top: 0.75rem;
+  padding: 0 0.25rem;
+}
+
+.calNavBtn {
+  font-family: 'DM Sans', sans-serif;
+  font-size: 0.78rem;
+  font-weight: 600;
+  padding: 0.45rem 1rem;
+  border-radius: 4px;
+  border: 1px solid var(--border-medium);
+  background: var(--bg-primary);
+  color: var(--text-secondary);
+  cursor: pointer;
+  transition: background 0.12s, color 0.12s, border-color 0.12s;
+  letter-spacing: 0.01em;
+}
+.calNavBtn:hover {
+  background: var(--bg-hover);
+  color: var(--text-primary);
+  border-color: var(--text-muted);
+}
+
+.calNavLabel {
+  font-size: 0.8rem;
+  font-weight: 600;
+  color: var(--text-secondary);
+  letter-spacing: -0.01em;
 }

@@ -18,7 +18,7 @@
   cursor: pointer;
   width: 100%;
   text-align: left;
-  border-radius: var(--radius-sm);
+  border-radius: 4px;
   transition: background 0.12s;
 }
 .monthHeader:hover { background: var(--bg-hover); }
@@ -39,7 +39,7 @@
   font-size: 0.65rem;
   font-weight: 600;
   padding: 0.18rem 0.5rem;
-  border-radius: 99px;
+  border-radius: 4px;
   background: var(--bg-tertiary);
   color: var(--text-muted);
   letter-spacing: 0.02em;
@@ -78,7 +78,7 @@
 
 .dayCell {
   height: 36px;
-  border-radius: 7px;
+  border-radius: 4px;
   display: flex;
   align-items: center;
   justify-content: center;
@@ -107,7 +107,7 @@
   transform: translateX(-50%);
   width: 4px;
   height: 4px;
-  border-radius: 50%;
+  border-radius: 4px;
   background: var(--text-muted);
 }
 
@@ -118,7 +118,7 @@
   justify-content: center;
   width: 100%;
   height: 100%;
-  border-radius: 7px;
+  border-radius: 4px;
   background: var(--c-bg, #eee);
   color: var(--c-text, inherit);
   font-size: 0.78rem;
@@ -126,30 +126,36 @@
   user-select: none;
 }
 
-/* ── 2 entries: vertical split ── */
+/* ── 2 entries: vertical split with gap ── */
 .splitCell {
   position: relative;
   width: 100%;
   height: 100%;
-  border-radius: 7px;
+  border-radius: 4px;
   overflow: hidden;
   display: flex;
   align-items: center;
   justify-content: center;
+  background: var(--bg-secondary); /* gap color — shows between halves */
+  gap: 0;
 }
 .splitL {
   position: absolute;
-  inset: 0;
-  right: 50%;
+  top: 0;
+  bottom: 0;
+  left: 0;
+  right: calc(50% + 1.5px); /* 1.5px each side = 3px total gap */
   background: var(--c, #eee);
-  border-radius: 7px 0 0 7px;
+  border-radius: 4px 0 0 4px;
 }
 .splitR {
   position: absolute;
-  inset: 0;
-  left: 50%;
+  top: 0;
+  bottom: 0;
+  right: 0;
+  left: calc(50% + 1.5px);
   background: var(--c, #eee);
-  border-radius: 0 7px 7px 0;
+  border-radius: 0 4px 4px 0;
 }
 .splitNum {
   position: relative;
@@ -158,7 +164,7 @@
   font-weight: 700;
   color: var(--text-primary);
   user-select: none;
-  text-shadow: 0 0 6px var(--bg-primary);
+  text-shadow: 0 0 4px var(--bg-secondary);
 }
 
 /* ── 3+ entries: number + color dots ── */
@@ -171,7 +177,7 @@
   height: 100%;
   gap: 2px;
   background: var(--bg-hover);
-  border-radius: 7px;
+  border-radius: 4px;
 }
 .multiNum {
   font-size: 0.75rem;
@@ -188,7 +194,7 @@
 .dot {
   width: 5px;
   height: 5px;
-  border-radius: 50%;
+  border-radius: 2px;
   flex-shrink: 0;
 }
 .dotMore {
@@ -225,7 +231,7 @@
 .tooltipDot {
   width: 8px;
   height: 8px;
-  border-radius: 50%;
+  border-radius: 4px;
   flex-shrink: 0;
   margin-top: 0.2rem;
 }

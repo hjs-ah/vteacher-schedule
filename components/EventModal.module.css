@@ -33,7 +33,7 @@
   right: 1rem;
   width: 28px;
   height: 28px;
-  border-radius: 50%;
+  border-radius: 4px;
   border: 1px solid var(--border-medium);
   background: var(--bg-secondary);
   color: var(--text-secondary);
@@ -80,7 +80,7 @@
   letter-spacing: 0.04em;
   text-transform: uppercase;
   padding: 0.22rem 0.6rem;
-  border-radius: 99px;
+  border-radius: 4px;
   margin-bottom: 0.5rem;
 }
 
@@ -103,7 +103,7 @@
 .avatar {
   width: 36px;
   height: 36px;
-  border-radius: 50%;
+  border-radius: 4px;
   display: flex;
   align-items: center;
   justify-content: center;

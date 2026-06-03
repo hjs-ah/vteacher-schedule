@@ -103,7 +103,7 @@
   transform: translateX(-50%);
   width: 4px;
   height: 4px;
-  border-radius: 50%;
+  border-radius: 4px;
   background: var(--text-muted);
 }
 
@@ -189,7 +189,7 @@
 .tooltipDot {
   width: 7px;
   height: 7px;
-  border-radius: 50%;
+  border-radius: 4px;
   flex-shrink: 0;
 }
 
