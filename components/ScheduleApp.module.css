@@ -388,7 +388,9 @@
 
 /* ── Mobile ── */
 @media (max-width: 640px) {
-  .headerInner { flex-direction: column; align-items: flex-start; gap: 0.65rem; }
+  .headerInner { flex-direction: column; align-items: center; gap: 0.65rem; }
+  .headerLeft { text-align: center; }
+  .headerControls { justify-content: center; }
   .calendarGrid { grid-template-columns: 1fr !important; }
   .legend { gap: 0.5rem; }
 }
