@@ -15,6 +15,7 @@ export type ScheduleEntry = {
   date: string;
   dateEnd?: string;
   facilitator: string;
+  facilitator2?: string;
   topic: string;
   notes?: string;
 };
@@ -48,6 +49,11 @@ async function queryDataSource(dsId: string): Promise<unknown[]> {
   return all;
 }
 
+function getText(props: Record<string, unknown>, key: string): string {
+  const p = props[key] as { rich_text?: Array<{ plain_text: string }> } | undefined;
+  return p?.rich_text?.[0]?.plain_text ?? "";
+}
+
 function extractEntries(pages: unknown[], classType: ClassType): ScheduleEntry[] {
   const entries: ScheduleEntry[] = [];
   for (const page of pages) {
@@ -57,16 +63,14 @@ function extractEntries(pages: unknown[], classType: ClassType): ScheduleEntry[]
     const titleProp = props["Topic"] as { title?: Array<{ plain_text: string }> } | undefined;
     const topic = titleProp?.title?.[0]?.plain_text ?? "";
 
-    const facProp = props["Facilitator"] as { rich_text?: Array<{ plain_text: string }> } | undefined;
-    const facilitator = facProp?.rich_text?.[0]?.plain_text ?? "";
+    const facilitator  = getText(props, "Facilitator");
+    const facilitator2 = getText(props, "Facilitator 2");
 
-    // Capture both start and end dates
     const dateProp = props["Date"] as { date?: { start: string; end?: string | null } } | undefined;
-    const date = dateProp?.date?.start ?? "";
+    const date    = dateProp?.date?.start ?? "";
     const dateEnd = dateProp?.date?.end ?? undefined;
 
-    const notesProp = props["Notes"] as { rich_text?: Array<{ plain_text: string }> } | undefined;
-    const notes = notesProp?.rich_text?.[0]?.plain_text ?? "";
+    const notes = getText(props, "Notes");
 
     if (!facilitator || !date) continue;
 
@@ -74,7 +78,8 @@ function extractEntries(pages: unknown[], classType: ClassType): ScheduleEntry[]
       id: (page as { id: string }).id,
       classType,
       date,
-      ...(dateEnd ? { dateEnd } : {}),
+      ...(dateEnd     ? { dateEnd }      : {}),
+      ...(facilitator2 ? { facilitator2 } : {}),
       facilitator,
       topic: topic || "Session",
       notes,
@@ -89,8 +94,7 @@ export async function getScheduleEntries(): Promise<ScheduleEntry[]> {
     classTypes.map(async (ct) => {
       const dsId = process.env[DS_ENV[ct]];
       if (!dsId) return [];
-      const pages = await queryDataSource(dsId);
-      return extractEntries(pages, ct);
+      return extractEntries(await queryDataSource(dsId), ct);
     })
   );
   return results.flatMap((r) => (r.status === "fulfilled" ? r.value : []));

@@ -1,18 +1,19 @@
 "use client";
 import { useState } from "react";
-import { ScheduleEntry, MONTH_NAMES, DAY_LABELS, truncate, parseLocalDate } from "./types";
+import { ScheduleEntry, MONTH_NAMES, DAY_LABELS, truncate, parseLocalDate, CLASS_ACCENT, getFacilitatorDisplay } from "./types";
 import styles from "./MonthCalendar.module.css";
 
 type Props = {
   year: number;
   month: number;
-  accent: string;
-  dateMap: Map<string, ScheduleEntry>; // ISO date string → entry
-  onDayClick: (date: Date, entry: ScheduleEntry) => void;
+  accent: string;                          // primary accent for this section
+  dateMap: Map<string, ScheduleEntry[]>;   // ISO → entries for this class type
+  allEntries: ScheduleEntry[];             // all filtered entries (for cross-class split detection)
+  onDayClick: (date: Date, entries: ScheduleEntry[]) => void;
   onMonthClick: (year: number, month: number) => void;
 };
 
-export default function MonthCalendar({ year, month, accent, dateMap, onDayClick, onMonthClick }: Props) {
+export default function MonthCalendar({ year, month, accent, dateMap, allEntries, onDayClick, onMonthClick }: Props) {
   const [hoveredDate, setHoveredDate] = useState<string | null>(null);
 
   const firstDay = new Date(year, month - 1, 1);
@@ -29,11 +30,20 @@ export default function MonthCalendar({ year, month, accent, dateMap, onDayClick
   const today = new Date();
   const isCurrentMonth = today.getFullYear() === year && today.getMonth() + 1 === month;
 
-  // Count sessions this month for header hint
+  // Count sessions this month for the header hint
   const sessionCount = [...dateMap.keys()].filter(iso => {
     const d = parseLocalDate(iso);
     return d.getFullYear() === year && d.getMonth() + 1 === month;
   }).length;
+
+  // Build a cross-class map: ISO → all entries from ALL classes for split-cell detection
+  // We only care about entries that share the same date as something in our dateMap
+  const crossMap = new Map<string, ScheduleEntry[]>();
+  for (const e of allEntries) {
+    const iso = e.date; // already expanded by parent
+    if (!crossMap.has(iso)) crossMap.set(iso, []);
+    crossMap.get(iso)!.push(e);
+  }
 
   return (
     <div className={styles.card}>
@@ -55,33 +65,89 @@ export default function MonthCalendar({ year, month, accent, dateMap, onDayClick
         {cells.map((day, idx) => {
           if (day === null) return <span key={`e-${idx}`} className={styles.emptyCell} />;
 
-          // Build ISO key: "2026-06-07"
           const mm = String(month).padStart(2, "0");
           const dd = String(day).padStart(2, "0");
           const isoKey = `${year}-${mm}-${dd}`;
-          const entry = dateMap.get(isoKey);
+
+          const thisClassEntries = dateMap.get(isoKey) ?? [];
+          const hasEntry = thisClassEntries.length > 0;
           const isToday = isCurrentMonth && today.getDate() === day;
           const isHovered = hoveredDate === isoKey;
           const localDate = new Date(year, month - 1, day);
 
+          // Check if another class also has an entry on this date (split-cell)
+          const otherClassEntries = hasEntry
+            ? (crossMap.get(isoKey) ?? []).filter(e => e.classType !== thisClassEntries[0].classType)
+            : [];
+          const splitEntry = otherClassEntries[0] ?? null;
+          const splitAccent = splitEntry ? CLASS_ACCENT[splitEntry.classType] : null;
+
           return (
             <div
               key={day}
-              className={`${styles.dayCell} ${entry ? styles.dayCellActive : ""} ${isToday ? styles.dayCellToday : ""}`}
-              style={entry ? { "--accent-bg": `var(--accent-${accent}-bg)`, "--accent-text": `var(--accent-${accent}-text)` } as React.CSSProperties : undefined}
-              onMouseEnter={() => entry && setHoveredDate(isoKey)}
+              className={`${styles.dayCell} ${hasEntry ? styles.dayCellActive : ""} ${isToday ? styles.dayCellToday : ""} ${splitEntry ? styles.dayCellSplit : ""}`}
+              onMouseEnter={() => hasEntry && setHoveredDate(isoKey)}
               onMouseLeave={() => setHoveredDate(null)}
-              onClick={() => entry && onDayClick(localDate, entry)}
-              role={entry ? "button" : undefined}
-              tabIndex={entry ? 0 : undefined}
-              onKeyDown={entry ? (e) => { if (e.key === "Enter" || e.key === " ") onDayClick(localDate, entry); } : undefined}
-              aria-label={entry ? `${MONTH_NAMES[month - 1]} ${day}: ${entry.topic} — ${entry.facilitator}` : undefined}
+              onClick={() => {
+                if (!hasEntry) return;
+                const allDay = [
+                  ...thisClassEntries,
+                  ...otherClassEntries.filter(e => !thisClassEntries.find(t => t.id === e.id)),
+                ];
+                onDayClick(localDate, allDay);
+              }}
+              role={hasEntry ? "button" : undefined}
+              tabIndex={hasEntry ? 0 : undefined}
+              onKeyDown={hasEntry ? (e) => { if (e.key === "Enter" || e.key === " ") onDayClick(localDate, thisClassEntries); } : undefined}
+              aria-label={hasEntry ? `${MONTH_NAMES[month - 1]} ${day}: ${thisClassEntries.map(e => e.facilitator).join(", ")}` : undefined}
             >
-              <span className={styles.dayNumber}>{day}</span>
-              {entry && isHovered && (
+              {/* Split cell: left half = this class, right half = other class */}
+              {hasEntry && splitEntry ? (
+                <span
+                  className={styles.splitCell}
+                  style={{
+                    "--left-bg": `var(--accent-${accent}-bg)`,
+                    "--right-bg": `var(--accent-${splitAccent}-bg)`,
+                    "--left-text": `var(--accent-${accent}-text)`,
+                    "--right-text": `var(--accent-${splitAccent}-text)`,
+                  } as React.CSSProperties}
+                >
+                  <span className={styles.splitLeft} />
+                  <span className={styles.splitRight} />
+                  <span className={styles.splitDayNumber}>{day}</span>
+                </span>
+              ) : hasEntry ? (
+                <span
+                  className={styles.solidCell}
+                  style={{
+                    "--cell-bg": `var(--accent-${accent}-bg)`,
+                    "--cell-text": `var(--accent-${accent}-text)`,
+                  } as React.CSSProperties}
+                >
+                  {day}
+                </span>
+              ) : (
+                <span className={styles.dayNumber}>{day}</span>
+              )}
+
+              {/* Tooltip */}
+              {hasEntry && isHovered && (
                 <div className={styles.tooltip}>
-                  <span className={styles.tooltipTopic}>{truncate(entry.topic, 24)}</span>
-                  <span className={styles.tooltipFacilitator}>{entry.facilitator}</span>
+                  {thisClassEntries.map((e, i) => (
+                    <span key={i} className={styles.tooltipRow}>
+                      <span className={styles.tooltipDot} style={{ background: `var(--accent-${accent})` }} />
+                      <span className={styles.tooltipName}>{getFacilitatorDisplay(e)}</span>
+                    </span>
+                  ))}
+                  {splitEntry && (
+                    <span className={styles.tooltipRow}>
+                      <span className={styles.tooltipDot} style={{ background: `var(--accent-${splitAccent})` }} />
+                      <span className={styles.tooltipName}>{getFacilitatorDisplay(splitEntry)}</span>
+                    </span>
+                  )}
+                  {(thisClassEntries[0]?.topic && thisClassEntries[0].topic !== "Session") && (
+                    <span className={styles.tooltipTopic}>{truncate(thisClassEntries[0].topic, 26)}</span>
+                  )}
                 </div>
               )}
             </div>

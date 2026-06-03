@@ -1,7 +1,7 @@
 .overlay {
   position: fixed;
   inset: 0;
-  background: rgba(0, 0, 0, 0.45);
+  background: rgba(0,0,0,0.45);
   display: flex;
   align-items: center;
   justify-content: center;
@@ -11,27 +11,21 @@
   -webkit-backdrop-filter: blur(2px);
   animation: fadeIn 0.15s ease;
 }
-
-@keyframes fadeIn {
-  from { opacity: 0; }
-  to { opacity: 1; }
-}
+@keyframes fadeIn { from { opacity:0; } to { opacity:1; } }
 
 .modal {
   background: var(--bg-primary);
   border-radius: var(--radius-lg);
   border: 1px solid var(--border-medium);
-  padding: 1.5rem 1.5rem 1.4rem;
+  padding: 1.4rem 1.5rem;
   width: 100%;
-  max-width: 360px;
+  max-width: 380px;
   position: relative;
   animation: slideUp 0.18s ease;
+  max-height: 85vh;
+  overflow-y: auto;
 }
-
-@keyframes slideUp {
-  from { transform: translateY(8px); opacity: 0; }
-  to { transform: translateY(0); opacity: 1; }
-}
+@keyframes slideUp { from { transform:translateY(8px); opacity:0; } to { transform:translateY(0); opacity:1; } }
 
 .closeBtn {
   position: absolute;
@@ -48,13 +42,35 @@
   display: flex;
   align-items: center;
   justify-content: center;
-  transition: background 0.12s, color 0.12s;
-  line-height: 1;
+  transition: background 0.12s;
+}
+.closeBtn:hover { background: var(--bg-hover); color: var(--text-primary); }
+
+.date {
+  font-size: 0.75rem;
+  color: var(--text-muted);
+  font-weight: 500;
+  margin-bottom: 0.25rem;
+  padding-right: 2rem;
 }
 
-.closeBtn:hover {
-  background: var(--bg-hover);
-  color: var(--text-primary);
+.multiLabel {
+  font-size: 0.68rem;
+  color: var(--text-muted);
+  font-weight: 600;
+  text-transform: uppercase;
+  letter-spacing: 0.05em;
+  margin-bottom: 0.75rem;
+}
+
+.entryBlock {
+  padding-bottom: 1rem;
+  margin-bottom: 0.25rem;
+}
+
+.entryBlockBordered {
+  border-top: 1px solid var(--border-light);
+  padding-top: 1rem;
 }
 
 .classBadge {
@@ -65,31 +81,17 @@
   text-transform: uppercase;
   padding: 0.22rem 0.6rem;
   border-radius: 99px;
-  margin-bottom: 0.65rem;
-}
-
-.date {
-  font-size: 0.75rem;
-  color: var(--text-muted);
-  font-weight: 500;
-  margin-bottom: 0.4rem;
-  letter-spacing: 0.01em;
+  margin-bottom: 0.5rem;
 }
 
 .topic {
-  font-size: 1.05rem;
+  font-size: 1rem;
   font-weight: 600;
   color: var(--text-primary);
   letter-spacing: -0.02em;
   line-height: 1.35;
-  margin-bottom: 1rem;
-  padding-right: 1.5rem;
-}
-
-.divider {
-  border: none;
-  border-top: 1px solid var(--border-light);
-  margin-bottom: 1rem;
+  margin-bottom: 0.75rem;
+  padding-right: 1rem;
 }
 
 .facilitatorRow {
@@ -99,20 +101,20 @@
 }
 
 .avatar {
-  width: 38px;
-  height: 38px;
+  width: 36px;
+  height: 36px;
   border-radius: 50%;
   display: flex;
   align-items: center;
   justify-content: center;
-  font-size: 0.75rem;
+  font-size: 0.72rem;
   font-weight: 700;
   flex-shrink: 0;
   letter-spacing: 0.02em;
 }
 
 .facilitatorLabel {
-  font-size: 0.65rem;
+  font-size: 0.63rem;
   color: var(--text-muted);
   font-weight: 500;
   text-transform: uppercase;
@@ -127,22 +129,8 @@
 }
 
 .notes {
-  margin-top: 0.9rem;
-  padding-top: 0.9rem;
-  border-top: 1px solid var(--border-light);
-}
-
-.notesLabel {
-  font-size: 0.65rem;
-  color: var(--text-muted);
-  font-weight: 500;
-  text-transform: uppercase;
-  letter-spacing: 0.05em;
-  margin-bottom: 0.3rem;
-}
-
-.notesText {
-  font-size: 0.8rem;
+  font-size: 0.75rem;
   color: var(--text-secondary);
-  line-height: 1.55;
+  margin-top: 0.6rem;
+  font-style: italic;
 }

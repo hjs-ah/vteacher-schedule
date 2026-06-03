@@ -356,3 +356,97 @@
   .filterBar { gap: 0.6rem; }
   .monthGrid { grid-template-columns: 1fr !important; }
 }
+
+/* ── Roster filter bar ── */
+.rosterBar {
+  max-width: 1200px;
+  margin: 0 auto;
+  padding: 0 1.5rem 0.75rem;
+  width: 100%;
+}
+
+.rosterToggle {
+  display: flex;
+  align-items: center;
+  gap: 0.45rem;
+  font-family: 'DM Sans', sans-serif;
+  font-size: 0.72rem;
+  font-weight: 600;
+  color: var(--text-secondary);
+  background: none;
+  border: none;
+  cursor: pointer;
+  padding: 0.3rem 0;
+  text-transform: uppercase;
+  letter-spacing: 0.05em;
+  transition: color 0.12s;
+}
+.rosterToggle:hover { color: var(--text-primary); }
+
+.rosterToggleIcon {
+  font-size: 0.65rem;
+  width: 10px;
+  display: inline-block;
+}
+
+.rosterActiveChip {
+  font-size: 0.68rem;
+  font-weight: 600;
+  padding: 0.15rem 0.5rem;
+  border-radius: 99px;
+  background: var(--accent-bible-foundation-bg);
+  color: var(--accent-bible-foundation-text);
+  text-transform: none;
+  letter-spacing: 0;
+}
+
+.rosterChips {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.35rem;
+  margin-top: 0.55rem;
+  padding-bottom: 0.25rem;
+}
+
+.rosterChip {
+  display: flex;
+  align-items: center;
+  gap: 0.4rem;
+  font-family: 'DM Sans', sans-serif;
+  font-size: 0.73rem;
+  font-weight: 500;
+  padding: 0.28rem 0.65rem 0.28rem 0.35rem;
+  border-radius: 99px;
+  border: 1px solid var(--border-medium);
+  background: var(--bg-primary);
+  color: var(--text-secondary);
+  cursor: pointer;
+  transition: all 0.12s;
+  white-space: nowrap;
+}
+.rosterChip:hover { border-color: var(--text-muted); color: var(--text-primary); }
+
+.rosterChipActive {
+  background: var(--text-primary);
+  color: var(--bg-primary);
+  border-color: var(--text-primary);
+}
+.rosterChipActive .rosterInitials {
+  background: rgba(255,255,255,0.2);
+  color: var(--bg-primary);
+}
+
+.rosterInitials {
+  width: 20px;
+  height: 20px;
+  border-radius: 50%;
+  background: var(--bg-tertiary);
+  color: var(--text-secondary);
+  font-size: 0.58rem;
+  font-weight: 700;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  letter-spacing: 0.02em;
+  flex-shrink: 0;
+}
