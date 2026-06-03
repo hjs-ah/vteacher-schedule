@@ -1,0 +1,94 @@
+@import url('https://fonts.googleapis.com/css2?family=DM+Sans:ital,opsz,wght@0,9..40,300;0,9..40,400;0,9..40,500;0,9..40,600;1,9..40,400&display=swap');
+
+:root {
+  --bg-primary: #ffffff;
+  --bg-secondary: #f8f7f5;
+  --bg-tertiary: #f0ede8;
+  --bg-card: #ffffff;
+  --bg-hover: #f4f1ec;
+
+  --text-primary: #1a1916;
+  --text-secondary: #5c5a55;
+  --text-muted: #9e9b95;
+
+  --border-light: rgba(0, 0, 0, 0.08);
+  --border-medium: rgba(0, 0, 0, 0.14);
+
+  --accent-bible-study: #3B6D11;
+  --accent-bible-study-bg: #EAF3DE;
+  --accent-bible-study-text: #27500A;
+
+  --accent-bible-foundation: #185FA5;
+  --accent-bible-foundation-bg: #E6F1FB;
+  --accent-bible-foundation-text: #0C447C;
+
+  --accent-discipleship: #3C3489;
+  --accent-discipleship-bg: #EEEDFE;
+  --accent-discipleship-text: #26215C;
+
+  --accent-new-members: #BA7517;
+  --accent-new-members-bg: #FAEEDA;
+  --accent-new-members-text: #633806;
+
+  --accent-mens-study: #993C1D;
+  --accent-mens-study-bg: #FAECE7;
+  --accent-mens-study-text: #4A1B0C;
+
+  --radius-sm: 6px;
+  --radius-md: 10px;
+  --radius-lg: 14px;
+}
+
+[data-theme="dark"] {
+  --bg-primary: #141412;
+  --bg-secondary: #1c1b18;
+  --bg-tertiary: #242320;
+  --bg-card: #1c1b18;
+  --bg-hover: #252420;
+
+  --text-primary: #f0ede8;
+  --text-secondary: #a8a49d;
+  --text-muted: #6b6860;
+
+  --border-light: rgba(255, 255, 255, 0.07);
+  --border-medium: rgba(255, 255, 255, 0.12);
+
+  --accent-bible-study: #97C459;
+  --accent-bible-study-bg: #1a2a0d;
+  --accent-bible-study-text: #C0DD97;
+
+  --accent-bible-foundation: #85B7EB;
+  --accent-bible-foundation-bg: #0d1e33;
+  --accent-bible-foundation-text: #B5D4F4;
+
+  --accent-discipleship: #AFA9EC;
+  --accent-discipleship-bg: #1a183d;
+  --accent-discipleship-text: #CECBF6;
+
+  --accent-new-members: #EF9F27;
+  --accent-new-members-bg: #2d1f08;
+  --accent-new-members-text: #FAC775;
+
+  --accent-mens-study: #F0997B;
+  --accent-mens-study-bg: #2a110a;
+  --accent-mens-study-text: #F5C4B3;
+}
+
+* {
+  box-sizing: border-box;
+  margin: 0;
+  padding: 0;
+}
+
+html {
+  font-family: 'DM Sans', sans-serif;
+  background-color: var(--bg-secondary);
+  color: var(--text-primary);
+  transition: background-color 0.2s ease, color 0.2s ease;
+  -webkit-font-smoothing: antialiased;
+}
+
+body {
+  min-height: 100vh;
+  background-color: var(--bg-secondary);
+}
