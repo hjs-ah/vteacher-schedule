@@ -1,22 +1,25 @@
 "use client";
-import { useState, useEffect, useCallback } from "react";
+import { useState, useEffect, useCallback, useMemo } from "react";
 import {
-  ScheduleEntry, ClassType, CLASS_LABELS, FULL_WEEKDAY, ALL_MINISTERS,
+  ScheduleEntry, ClassType, CLASS_LABELS, ALL_MINISTERS,
   CLASS_ACCENT, MONTH_NAMES, parseLocalDate, expandEntryDates,
-  getFacilitatorDisplay, entryMatchesMinister,
+  entryMatchesMinister,
 } from "./types";
-import MonthCalendar from "./MonthCalendar";
+import UnifiedCalendar from "./UnifiedCalendar";
+import ListView from "./ListView";
 import EventModal from "./EventModal";
 import MonthSummaryModal from "./MonthSummaryModal";
 import styles from "./ScheduleApp.module.css";
 
+type ViewMode = "calendar" | "list";
 type ActiveEvent = { date: Date; entries: ScheduleEntry[] };
 type MonthModal = { year: number; month: number; entries: ScheduleEntry[] };
 type DiagStatus = "idle" | "checking" | "ok" | "error";
 
 export default function ScheduleApp() {
   const [theme, setTheme] = useState<"light" | "dark">("light");
-  const [monthCount, setMonthCount] = useState<2 | 3>(2);
+  const [viewMode, setViewMode] = useState<ViewMode>("calendar");
+  const [monthCount, setMonthCount] = useState<1 | 2 | 3>(1);
   const [classFilters, setClassFilters] = useState<Set<ClassType>>(new Set());
   const [ministerFilter, setMinisterFilter] = useState<string | null>(null);
   const [entries, setEntries] = useState<ScheduleEntry[]>([]);
@@ -33,12 +36,16 @@ export default function ScheduleApp() {
   const baseYear = now.getFullYear();
   const baseMonth = now.getMonth() + 1;
 
-  const monthSlots = Array.from({ length: monthCount }, (_, i) => {
-    const totalMonth = baseMonth + i;
-    const year = baseYear + Math.floor((totalMonth - 1) / 12);
-    const month = ((totalMonth - 1) % 12) + 1;
-    return { year, month };
-  });
+  const monthSlots = useMemo(() =>
+    Array.from({ length: monthCount }, (_, i) => {
+      const total = baseMonth + i;
+      return {
+        year: baseYear + Math.floor((total - 1) / 12),
+        month: ((total - 1) % 12) + 1,
+      };
+    }),
+    [monthCount, baseYear, baseMonth]
+  );
 
   useEffect(() => {
     try {
@@ -96,39 +103,109 @@ export default function ScheduleApp() {
     }
   };
 
-  // Apply both filters
-  const filteredEntries = ministerFilter
-    ? entries.filter(e => entryMatchesMinister(e, ministerFilter))
-    : entries;
+  // ── Apply filters ──────────────────────────────────────────────────────────
+  const filteredEntries = useMemo(() => {
+    let result = entries;
+    if (classFilters.size > 0) result = result.filter(e => classFilters.has(e.classType));
+    if (ministerFilter) result = result.filter(e => entryMatchesMinister(e, ministerFilter));
+    return result;
+  }, [entries, classFilters, ministerFilter]);
 
-  const visibleClasses = classFilters.size > 0
-    ? CLASS_LABELS.filter(c => classFilters.has(c))
-    : CLASS_LABELS;
+  // ── Build unified date → entries[] map (expand ranges) ────────────────────
+  const unifiedDateMap = useMemo(() => {
+    const map = new Map<string, ScheduleEntry[]>();
+    for (const e of filteredEntries) {
+      for (const iso of expandEntryDates(e)) {
+        // Only single-date entry overrides range entry for same class on same day
+        const existing = map.get(iso) ?? [];
+        const sameClass = existing.find(x => x.classType === e.classType);
+        if (sameClass) {
+          if (!e.dateEnd && sameClass.dateEnd) {
+            // Replace range with specific
+            map.set(iso, [...existing.filter(x => x.classType !== e.classType), e]);
+          }
+          // else keep existing
+        } else {
+          map.set(iso, [...existing, e]);
+        }
+      }
+    }
+    return map;
+  }, [filteredEntries]);
 
   const handleMonthClick = (year: number, month: number) => {
-    const monthEntries = filteredEntries.filter(e => {
-      const d = parseLocalDate(e.date);
-      return d.getFullYear() === year && d.getMonth() + 1 === month;
-    });
+    const monthEntries: ScheduleEntry[] = [];
+    const seen = new Set<string>();
+    for (const [iso, dayEntries] of unifiedDateMap.entries()) {
+      const d = parseLocalDate(iso);
+      if (d.getFullYear() === year && d.getMonth() + 1 === month) {
+        for (const e of dayEntries) {
+          if (!seen.has(e.id + iso)) {
+            monthEntries.push(e);
+            seen.add(e.id + iso);
+          }
+        }
+      }
+    }
     setMonthModal({ year, month, entries: monthEntries });
   };
 
   const anyFilterActive = classFilters.size > 0 || ministerFilter !== null;
+  const totalSessions = [...unifiedDateMap.values()].reduce((sum, arr) => sum + arr.length, 0);
+
+  // List view needs entries with already-expanded dates
+  const expandedForList = useMemo(() => {
+    const result: ScheduleEntry[] = [];
+    for (const [iso, dayEntries] of unifiedDateMap.entries()) {
+      for (const e of dayEntries) {
+        result.push({ ...e, date: iso, dateEnd: undefined });
+      }
+    }
+    return result;
+  }, [unifiedDateMap]);
 
   return (
     <div className={styles.root}>
+
       {/* ── Header ── */}
       <header className={styles.header}>
         <div className={styles.headerInner}>
-          <div>
+          <div className={styles.headerLeft}>
             <h1 className={styles.siteTitle}>VOW Center</h1>
             <p className={styles.siteSubtitle}>Teaching Schedule</p>
           </div>
           <div className={styles.headerControls}>
-            <div className={styles.monthToggle}>
-              <button className={monthCount === 2 ? styles.toggleBtnActive : styles.toggleBtn} onClick={() => setMonthCount(2)}>2 mo</button>
-              <button className={monthCount === 3 ? styles.toggleBtnActive : styles.toggleBtn} onClick={() => setMonthCount(3)}>3 mo</button>
+            {/* View toggle */}
+            <div className={styles.viewToggle}>
+              <button
+                className={viewMode === "calendar" ? styles.viewBtnActive : styles.viewBtn}
+                onClick={() => setViewMode("calendar")}
+                aria-pressed={viewMode === "calendar"}
+              >
+                <span className={styles.viewIcon}>▦</span> Calendar
+              </button>
+              <button
+                className={viewMode === "list" ? styles.viewBtnActive : styles.viewBtn}
+                onClick={() => setViewMode("list")}
+                aria-pressed={viewMode === "list"}
+              >
+                <span className={styles.viewIcon}>☰</span> List
+              </button>
             </div>
+
+            {/* Month count (calendar only) */}
+            {viewMode === "calendar" && (
+              <div className={styles.monthToggle}>
+                {([1, 2, 3] as const).map(n => (
+                  <button
+                    key={n}
+                    className={monthCount === n ? styles.toggleBtnActive : styles.toggleBtn}
+                    onClick={() => setMonthCount(n)}
+                  >{n} mo</button>
+                ))}
+              </div>
+            )}
+
             <button className={styles.themeBtn} onClick={toggleTheme} aria-label="Toggle theme">
               {theme === "light" ? "🌙" : "☀️"}
             </button>
@@ -139,7 +216,7 @@ export default function ScheduleApp() {
         </div>
       </header>
 
-      {/* ── Diagnostic panel ── */}
+      {/* ── Diagnostic ── */}
       {showDiag && (
         <div className={`${styles.diagPanel} ${diagStatus === "ok" ? styles.diagOk : diagStatus === "error" ? styles.diagError : styles.diagChecking}`}>
           <div className={styles.diagInner}>
@@ -149,72 +226,94 @@ export default function ScheduleApp() {
         </div>
       )}
 
-      {/* ── Class filter chips ── */}
-      <div className={styles.filterBar}>
-        <span className={styles.filterHint}>
-          {anyFilterActive ? `${classFilters.size + (ministerFilter ? 1 : 0)} filter${classFilters.size + (ministerFilter ? 1 : 0) > 1 ? "s" : ""} active` : "Click to filter"}
-        </span>
-        <div className={styles.filterChips}>
-          {CLASS_LABELS.map(c => {
-            const active = classFilters.has(c);
-            const accent = CLASS_ACCENT[c];
-            return (
-              <button key={c}
-                className={`${styles.filterChip} ${active ? styles.filterChipActive : ""}`}
-                onClick={() => toggleClassFilter(c)}
-                style={active ? { background: `var(--accent-${accent}-bg)`, color: `var(--accent-${accent}-text)`, borderColor: `var(--accent-${accent})` } : undefined}
-                aria-pressed={active}
-              >
-                <span className={styles.chipDot} style={{ background: `var(--accent-${accent})` }} />
-                {c}
-              </button>
-            );
-          })}
-          {anyFilterActive && (
-            <button className={styles.clearFilters} onClick={() => { setClassFilters(new Set()); setMinisterFilter(null); }}>Clear ✕</button>
-          )}
-        </div>
-      </div>
-
-      {/* ── Roster filter ── */}
-      <div className={styles.rosterBar}>
-        <button
-          className={styles.rosterToggle}
-          onClick={() => setShowRoster(v => !v)}
-          aria-expanded={showRoster}
-        >
-          <span className={styles.rosterToggleIcon}>{showRoster ? "▾" : "▸"}</span>
-          Filter by Minister
-          {ministerFilter && (
-            <span className={styles.rosterActiveChip}>{ministerFilter}</span>
-          )}
-        </button>
-
-        {showRoster && (
-          <div className={styles.rosterChips}>
-            {ALL_MINISTERS.map(name => {
-              const active = ministerFilter === name;
+      {/* ── Filter bar ── */}
+      <div className={styles.filterSection}>
+        {/* Class chips */}
+        <div className={styles.filterBar}>
+          <span className={styles.filterLabel}>
+            {anyFilterActive
+              ? `${classFilters.size + (ministerFilter ? 1 : 0)} filter${classFilters.size + (ministerFilter ? 1 : 0) > 1 ? "s" : ""} active`
+              : "Filter by class"}
+          </span>
+          <div className={styles.filterChips}>
+            {CLASS_LABELS.map(c => {
+              const active = classFilters.has(c);
+              const accent = CLASS_ACCENT[c];
               return (
-                <button
-                  key={name}
-                  className={`${styles.rosterChip} ${active ? styles.rosterChipActive : ""}`}
-                  onClick={() => setMinisterFilter(active ? null : name)}
+                <button key={c}
+                  className={`${styles.chip} ${active ? styles.chipActive : ""}`}
+                  onClick={() => toggleClassFilter(c)}
+                  style={active ? {
+                    background: `var(--accent-${accent}-bg)`,
+                    color: `var(--accent-${accent}-text)`,
+                    borderColor: `var(--accent-${accent})`,
+                  } : undefined}
                   aria-pressed={active}
                 >
-                  <span className={styles.rosterInitials}>
-                    {name.split(" ").map(p => p[0]).join("").toUpperCase().slice(0, 2)}
-                  </span>
-                  {name}
+                  <span className={styles.chipDot} style={{ background: `var(--accent-${accent})` }} />
+                  {c}
                 </button>
               );
             })}
+            {anyFilterActive && (
+              <button className={styles.clearBtn} onClick={() => { setClassFilters(new Set()); setMinisterFilter(null); }}>
+                Clear ✕
+              </button>
+            )}
+          </div>
+        </div>
+
+        {/* Roster filter */}
+        <div className={styles.rosterSection}>
+          <button className={styles.rosterToggle} onClick={() => setShowRoster(v => !v)}>
+            <span>{showRoster ? "▾" : "▸"}</span>
+            Filter by Minister
+            {ministerFilter && <span className={styles.rosterPill}>{ministerFilter}</span>}
+          </button>
+          {showRoster && (
+            <div className={styles.rosterChips}>
+              {ALL_MINISTERS.map(name => {
+                const active = ministerFilter === name;
+                return (
+                  <button
+                    key={name}
+                    className={`${styles.rosterChip} ${active ? styles.rosterChipActive : ""}`}
+                    onClick={() => setMinisterFilter(active ? null : name)}
+                  >
+                    <span className={styles.rosterInitials}>
+                      {name.split(" ").map(p => p[0]).join("").slice(0, 2).toUpperCase()}
+                    </span>
+                    {name}
+                  </button>
+                );
+              })}
+            </div>
+          )}
+        </div>
+
+        {/* Stats row */}
+        {!loading && !error && entries.length > 0 && (
+          <div className={styles.statsRow}>
+            <div className={styles.legend}>
+              {CLASS_LABELS.map(c => (
+                <span key={c} className={styles.legendItem}>
+                  <span className={styles.legendDot} style={{ background: `var(--accent-${CLASS_ACCENT[c]})` }} />
+                  {c}
+                </span>
+              ))}
+            </div>
+            <span className={styles.sessionTotal}>{totalSessions} session{totalSessions !== 1 ? "s" : ""}</span>
           </div>
         )}
       </div>
 
-      {/* ── Main ── */}
+      {/* ── Main content ── */}
       <main className={styles.main}>
-        {loading && <div className={styles.statusMsg}><span className={styles.spinner} />Loading schedule…</div>}
+        {loading && (
+          <div className={styles.statusMsg}>
+            <span className={styles.spinner} />Loading schedule…
+          </div>
+        )}
         {error && !loading && (
           <div className={styles.errorMsg}>
             <strong>Could not load schedule</strong>
@@ -228,71 +327,49 @@ export default function ScheduleApp() {
         {!loading && !error && entries.length === 0 && (
           <div className={styles.emptyState}>
             <p>No schedule entries found.</p>
-            <p style={{ fontSize:"0.8rem", marginTop:"0.4rem", opacity:0.7 }}>Check that all NOTION_DS_* env vars are set and each integration is connected to its database.</p>
+            <p style={{ fontSize:"0.8rem", marginTop:"0.4rem", opacity:0.7 }}>
+              Check that all NOTION_DS_* env vars are set and each integration is connected to its database.
+            </p>
             <button className={styles.retryBtn} style={{ marginTop:"0.75rem" }} onClick={runDiagnostic}>Run Diagnostic</button>
           </div>
         )}
 
-        {!loading && !error && entries.length > 0 && visibleClasses.map(classType => {
-          const accent = CLASS_ACCENT[classType];
-          const fullDay = FULL_WEEKDAY[classType];
-          const classEntries = filteredEntries.filter(e => e.classType === classType);
-          if (classEntries.length === 0) return null;
-
-          // Build date→entries[] map (array to support split cells)
-          const dateMap = new Map<string, ScheduleEntry[]>();
-          for (const e of classEntries) {
-            for (const iso of expandEntryDates(e)) {
-              if (!dateMap.has(iso)) dateMap.set(iso, []);
-              const existing = dateMap.get(iso)!;
-              // Single-date entries take priority over range entries for same class
-              if (existing.length === 0 || !e.dateEnd) {
-                if (!e.dateEnd) {
-                  // Replace range entry with specific
-                  dateMap.set(iso, [e]);
-                } else if (existing[0]?.dateEnd) {
-                  // Both range — keep first
-                  if (existing.length === 0) dateMap.set(iso, [e]);
+        {!loading && !error && entries.length > 0 && viewMode === "calendar" && (
+          <div className={styles.calendarGrid} style={{ gridTemplateColumns: `repeat(${monthCount}, 1fr)` }}>
+            {monthSlots.map(({ year, month }) => {
+              // Slice dateMap to only this month's dates
+              const monthMap = new Map<string, ScheduleEntry[]>();
+              for (const [iso, dayEntries] of unifiedDateMap.entries()) {
+                const d = parseLocalDate(iso);
+                if (d.getFullYear() === year && d.getMonth() + 1 === month) {
+                  monthMap.set(iso, dayEntries);
                 }
               }
-            }
-          }
-          const totalSessions = dateMap.size;
+              return (
+                <UnifiedCalendar
+                  key={`${year}-${month}`}
+                  year={year}
+                  month={month}
+                  dateMap={monthMap}
+                  onDayClick={(date, dayEntries) => setActiveEvent({ date, entries: dayEntries })}
+                  onMonthClick={handleMonthClick}
+                />
+              );
+            })}
+          </div>
+        )}
 
-          return (
-            <section key={classType} className={styles.classSection}>
-              <div className={styles.classSectionHeader}>
-                <span className={styles.classDot} style={{ background: `var(--accent-${accent})` }} />
-                <h2 className={styles.classSectionTitle}>{classType}</h2>
-                {fullDay && (
-                  <span className={styles.classDayBadge} style={{ background:`var(--accent-${accent}-bg)`, color:`var(--accent-${accent}-text)` }}>
-                    {fullDay}
-                  </span>
-                )}
-                <span className={styles.entryCount}>{totalSessions} session{totalSessions !== 1 ? "s" : ""}</span>
-              </div>
-              <div className={styles.monthGrid} style={{ gridTemplateColumns:`repeat(${monthCount}, 1fr)` }}>
-                {monthSlots.map(({ year, month }) => (
-                  <MonthCalendar
-                    key={`${classType}-${year}-${month}`}
-                    year={year}
-                    month={month}
-                    accent={accent}
-                    dateMap={dateMap}
-                    allEntries={filteredEntries}
-                    onDayClick={(date, dayEntries) => setActiveEvent({ date, entries: dayEntries })}
-                    onMonthClick={handleMonthClick}
-                  />
-                ))}
-              </div>
-            </section>
-          );
-        })}
+        {!loading && !error && entries.length > 0 && viewMode === "list" && (
+          <ListView
+            entries={expandedForList}
+            monthSlots={monthSlots}
+            onEntryClick={(date, dayEntries) => setActiveEvent({ date, entries: dayEntries })}
+          />
+        )}
       </main>
 
       <footer className={styles.footer}>
-        <p>Verity Outreach Worship Center · Schedule updates within 5 minutes · All times Eastern</p>
-        {!loading && !error && <p className={styles.footerCount}>{entries.length} sessions loaded</p>}
+        <p>Verity Outreach Worship Center · Updates within 5 minutes · All times Eastern</p>
       </footer>
 
       {activeEvent && (

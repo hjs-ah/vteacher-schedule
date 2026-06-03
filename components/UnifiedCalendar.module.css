@@ -1,0 +1,267 @@
+.card {
+  background: var(--bg-primary);
+  border-radius: var(--radius-lg);
+  border: 1px solid var(--border-light);
+  padding: 1.25rem 1.1rem 1rem;
+  transition: border-color 0.15s;
+}
+
+/* Month header */
+.monthHeader {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+  margin-bottom: 1rem;
+  padding: 0.3rem 0.35rem;
+  background: none;
+  border: none;
+  cursor: pointer;
+  width: 100%;
+  text-align: left;
+  border-radius: var(--radius-sm);
+  transition: background 0.12s;
+}
+.monthHeader:hover { background: var(--bg-hover); }
+.monthHeader:hover .viewHint { opacity: 1; }
+
+.monthName {
+  font-size: 1rem;
+  font-weight: 600;
+  color: var(--text-primary);
+  letter-spacing: -0.02em;
+}
+.yearLabel {
+  font-size: 0.78rem;
+  color: var(--text-muted);
+  font-weight: 400;
+}
+.sessionBadge {
+  font-size: 0.65rem;
+  font-weight: 600;
+  padding: 0.18rem 0.5rem;
+  border-radius: 99px;
+  background: var(--bg-tertiary);
+  color: var(--text-muted);
+  letter-spacing: 0.02em;
+}
+.viewHint {
+  font-size: 0.65rem;
+  color: var(--text-muted);
+  margin-left: auto;
+  opacity: 0;
+  transition: opacity 0.12s;
+}
+
+/* Day labels */
+.dayLabels {
+  display: grid;
+  grid-template-columns: repeat(7, 1fr);
+  margin-bottom: 0.35rem;
+}
+.dayLabel {
+  text-align: center;
+  font-size: 0.65rem;
+  font-weight: 600;
+  color: var(--text-muted);
+  text-transform: uppercase;
+  letter-spacing: 0.04em;
+  padding: 0.2rem 0;
+}
+
+/* Grid */
+.grid {
+  display: grid;
+  grid-template-columns: repeat(7, 1fr);
+  gap: 3px;
+}
+.emptyCell { height: 36px; }
+
+.dayCell {
+  height: 36px;
+  border-radius: 7px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  position: relative;
+  overflow: visible;
+}
+.dayCellActive { cursor: pointer; }
+.dayCellActive:hover { opacity: 0.85; }
+
+/* Plain number */
+.dayNum {
+  font-size: 0.78rem;
+  font-weight: 400;
+  color: var(--text-secondary);
+  user-select: none;
+}
+.dayNumToday {
+  font-weight: 700;
+  color: var(--text-primary);
+}
+.dayCellToday:not(.dayCellActive)::after {
+  content: '';
+  position: absolute;
+  bottom: 3px;
+  left: 50%;
+  transform: translateX(-50%);
+  width: 4px;
+  height: 4px;
+  border-radius: 50%;
+  background: var(--text-muted);
+}
+
+/* ── 1 entry: solid background ── */
+.solidCell {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 100%;
+  height: 100%;
+  border-radius: 7px;
+  background: var(--c-bg, #eee);
+  color: var(--c-text, inherit);
+  font-size: 0.78rem;
+  font-weight: 600;
+  user-select: none;
+}
+
+/* ── 2 entries: vertical split ── */
+.splitCell {
+  position: relative;
+  width: 100%;
+  height: 100%;
+  border-radius: 7px;
+  overflow: hidden;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+.splitL {
+  position: absolute;
+  inset: 0;
+  right: 50%;
+  background: var(--c, #eee);
+  border-radius: 7px 0 0 7px;
+}
+.splitR {
+  position: absolute;
+  inset: 0;
+  left: 50%;
+  background: var(--c, #eee);
+  border-radius: 0 7px 7px 0;
+}
+.splitNum {
+  position: relative;
+  z-index: 1;
+  font-size: 0.78rem;
+  font-weight: 700;
+  color: var(--text-primary);
+  user-select: none;
+  text-shadow: 0 0 6px var(--bg-primary);
+}
+
+/* ── 3+ entries: number + color dots ── */
+.multiCell {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  width: 100%;
+  height: 100%;
+  gap: 2px;
+  background: var(--bg-hover);
+  border-radius: 7px;
+}
+.multiNum {
+  font-size: 0.75rem;
+  font-weight: 600;
+  color: var(--text-primary);
+  line-height: 1;
+  user-select: none;
+}
+.dots {
+  display: flex;
+  gap: 2px;
+  align-items: center;
+}
+.dot {
+  width: 5px;
+  height: 5px;
+  border-radius: 50%;
+  flex-shrink: 0;
+}
+.dotMore {
+  font-size: 0.5rem;
+  color: var(--text-muted);
+  font-weight: 700;
+  line-height: 1;
+}
+
+/* ── Tooltip ── */
+.tooltip {
+  position: absolute;
+  bottom: calc(100% + 8px);
+  left: 50%;
+  transform: translateX(-50%);
+  background: var(--bg-primary);
+  border: 1px solid var(--border-medium);
+  border-radius: var(--radius-md);
+  padding: 0.55rem 0.7rem;
+  z-index: 40;
+  display: flex;
+  flex-direction: column;
+  gap: 0.45rem;
+  box-shadow: 0 4px 16px rgba(0,0,0,0.1);
+  pointer-events: none;
+  min-width: 170px;
+  max-width: 240px;
+}
+.tooltipRow {
+  display: flex;
+  align-items: flex-start;
+  gap: 0.45rem;
+}
+.tooltipDot {
+  width: 8px;
+  height: 8px;
+  border-radius: 50%;
+  flex-shrink: 0;
+  margin-top: 0.2rem;
+}
+.tooltipInfo {
+  display: flex;
+  flex-direction: column;
+  gap: 0.05rem;
+}
+.tooltipClass {
+  font-size: 0.6rem;
+  font-weight: 600;
+  color: var(--text-muted);
+  text-transform: uppercase;
+  letter-spacing: 0.05em;
+}
+.tooltipName {
+  font-size: 0.75rem;
+  font-weight: 600;
+  color: var(--text-primary);
+}
+.tooltipTopic {
+  font-size: 0.67rem;
+  color: var(--text-secondary);
+  font-style: italic;
+}
+
+.empty {
+  font-size: 0.72rem;
+  color: var(--text-muted);
+  text-align: center;
+  padding: 0.75rem 0 0.25rem;
+  font-style: italic;
+}
+
+/* Responsive: larger cells on wide screens */
+@media (min-width: 700px) {
+  .dayCell { height: 42px; }
+  .emptyCell { height: 42px; }
+}
