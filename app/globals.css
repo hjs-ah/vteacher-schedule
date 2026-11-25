@@ -1,6 +1,7 @@
 @import url('https://fonts.googleapis.com/css2?family=DM+Sans:ital,opsz,wght@0,9..40,300;0,9..40,400;0,9..40,500;0,9..40,600;1,9..40,400&display=swap');
 
 :root {
+  color-scheme: light;
   --bg-primary: #ffffff;
   --bg-secondary: #f8f7f5;
   --bg-tertiary: #f0ede8;
@@ -8,8 +9,8 @@
   --bg-hover: #f4f1ec;
 
   --text-primary: #1a1916;
-  --text-secondary: #5c5a55;
-  --text-muted: #9e9b95;
+  --text-secondary: #46443f;
+  --text-muted: #66635d;
 
   --border-light: rgba(0, 0, 0, 0.08);
   --border-medium: rgba(0, 0, 0, 0.14);
@@ -48,46 +49,48 @@
 }
 
 [data-theme="dark"] {
-  --bg-primary: #141412;
-  --bg-secondary: #1c1b18;
-  --bg-tertiary: #242320;
-  --bg-card: #1c1b18;
-  --bg-hover: #252420;
+  color-scheme: dark;
+  /* Dark blue theme — high contrast (body text >= 8:1, muted >= 5.6:1 on every surface) */
+  --bg-primary: #0b1a36;
+  --bg-secondary: #071126;
+  --bg-tertiary: #16305c;
+  --bg-card: #0f2142;
+  --bg-hover: #1c3a6e;
 
-  --text-primary: #f0ede8;
-  --text-secondary: #a8a49d;
-  --text-muted: #6b6860;
+  --text-primary: #f5f8ff;
+  --text-secondary: #cbd8f0;
+  --text-muted: #a6b8d9;
 
-  --border-light: rgba(255, 255, 255, 0.07);
-  --border-medium: rgba(255, 255, 255, 0.12);
+  --border-light: rgba(150, 185, 255, 0.24);
+  --border-medium: rgba(150, 185, 255, 0.42);
 
-  --accent-bible-study: #97C459;
-  --accent-bible-study-bg: #1a2a0d;
-  --accent-bible-study-text: #C0DD97;
+  --accent-bible-study: #9bd75f;
+  --accent-bible-study-bg: #143016;
+  --accent-bible-study-text: #d3f0b0;
 
-  --accent-bible-foundation: #85B7EB;
-  --accent-bible-foundation-bg: #0d1e33;
-  --accent-bible-foundation-text: #B5D4F4;
+  --accent-bible-foundation: #7fc0ff;
+  --accent-bible-foundation-bg: #0c2a52;
+  --accent-bible-foundation-text: #cfe6ff;
 
-  --accent-discipleship: #AFA9EC;
-  --accent-discipleship-bg: #1a183d;
-  --accent-discipleship-text: #CECBF6;
+  --accent-discipleship: #b9b2ff;
+  --accent-discipleship-bg: #241f5c;
+  --accent-discipleship-text: #dedaff;
 
-  --accent-new-members: #EF9F27;
-  --accent-new-members-bg: #2d1f08;
-  --accent-new-members-text: #FAC775;
+  --accent-new-members: #ffb347;
+  --accent-new-members-bg: #3a2406;
+  --accent-new-members-text: #ffd89a;
 
-  --accent-mens-study: #F0997B;
-  --accent-mens-study-bg: #2a110a;
-  --accent-mens-study-text: #F5C4B3;
+  --accent-mens-study: #ff9f85;
+  --accent-mens-study-bg: #3d1409;
+  --accent-mens-study-text: #ffd2c4;
 
-  --accent-preaching: #EF9F27;
-  --accent-preaching-bg: #2d1f08;
-  --accent-preaching-text: #FAC775;
+  --accent-preaching: #ffc247;
+  --accent-preaching-bg: #3a2806;
+  --accent-preaching-text: #ffe0a0;
 
-  --accent-testimony: #ED93B1;
-  --accent-testimony-bg: #2a0f1c;
-  --accent-testimony-text: #F4C0D1;
+  --accent-testimony: #ff9cc0;
+  --accent-testimony-bg: #3d0f24;
+  --accent-testimony-text: #ffd0e1;
 }
 
 * {

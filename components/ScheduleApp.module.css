@@ -429,3 +429,33 @@
   color: var(--text-secondary);
   letter-spacing: -0.01em;
 }
+
+
+/* ── Year filter ── */
+.yearBar {
+  display: flex;
+  align-items: center;
+  gap: 0.75rem;
+  flex-wrap: wrap;
+  margin-bottom: 0.6rem;
+}
+.yearChips { display: flex; gap: 0.4rem; flex-wrap: wrap; }
+.yearChip {
+  font-family: 'DM Sans', sans-serif;
+  font-size: 0.8rem;
+  font-weight: 600;
+  padding: 0.38rem 0.95rem;
+  border-radius: 999px;
+  border: 1px solid var(--border-medium);
+  background: var(--bg-card);
+  color: var(--text-secondary);
+  cursor: pointer;
+  transition: background 0.12s, color 0.12s, border-color 0.12s;
+}
+.yearChip:hover { background: var(--bg-hover); color: var(--text-primary); }
+.yearChip:focus-visible { outline: 2px solid var(--accent-bible-foundation); outline-offset: 2px; }
+.yearChipActive, .yearChipActive:hover {
+  background: var(--text-primary);
+  color: var(--bg-primary);
+  border-color: var(--text-primary);
+}

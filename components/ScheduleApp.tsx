@@ -17,7 +17,7 @@ type MonthModal = { year: number; month: number; entries: ScheduleEntry[] };
 type DiagStatus = "idle" | "checking" | "ok" | "error";
 
 export default function ScheduleApp() {
-  const [theme, setTheme] = useState<"light" | "dark">("light");
+  const [theme, setTheme] = useState<"light" | "dark">("dark");
   const [viewMode, setViewMode] = useState<ViewMode>("calendar");
   const [monthCount, setMonthCount] = useState<1 | 2 | 3 | 6>(1);
   const [classFilters, setClassFilters] = useState<Set<ClassType>>(new Set());
@@ -50,9 +50,34 @@ export default function ScheduleApp() {
     [monthCount, monthOffset, baseYear, baseMonth]
   );
 
+  // ── Year filter ────────────────────────────────────────────────────────────
+  // Years that have data (start or end of any entry) plus the current year.
+  const availableYears = useMemo(() => {
+    const ys = new Set<number>([baseYear]);
+    for (const e of entries) {
+      for (const iso of [e.date, e.dateEnd]) {
+        if (!iso) continue;
+        const y = parseInt(iso.slice(0, 4), 10);
+        if (!Number.isNaN(y)) ys.add(y);
+      }
+    }
+    return [...ys].sort((a, b) => a - b);
+  }, [entries, baseYear]);
+
+  // The "selected" year is simply the year of the first month on screen,
+  // so it stays in sync with Prev/Next navigation.
+  const selectedYear = monthSlots[0].year;
+
+  const handleSelectYear = (y: number) => {
+    // Current year -> today's month; any other year -> January of that year.
+    const targetMonthIndex = y === baseYear ? baseMonth : 1;
+    const total = (y - baseYear) * 12 + targetMonthIndex - baseMonth;
+    setMonthOffset(total);
+  };
+
   useEffect(() => {
     try {
-      const saved = localStorage.getItem("vow-theme") as "light" | "dark" | null;
+      const saved = localStorage.getItem("vow-theme-v2") as "light" | "dark" | null;
       if (saved) { setTheme(saved); document.documentElement.setAttribute("data-theme", saved); }
     } catch {}
   }, []);
@@ -61,7 +86,7 @@ export default function ScheduleApp() {
     const next = theme === "light" ? "dark" : "light";
     setTheme(next);
     document.documentElement.setAttribute("data-theme", next);
-    try { localStorage.setItem("vow-theme", next); } catch {}
+    try { localStorage.setItem("vow-theme-v2", next); } catch {}
   };
 
   const toggleClassFilter = (ct: ClassType) => {
@@ -157,7 +182,10 @@ export default function ScheduleApp() {
   };
 
   const anyFilterActive = classFilters.size > 0 || ministerFilter !== null;
-  const totalSessions = [...unifiedDateMap.values()].reduce((sum, arr) => sum + arr.length, 0);
+  const totalSessions = [...unifiedDateMap.entries()].reduce(
+    (sum, [iso, arr]) => (iso.startsWith(`${selectedYear}-`) ? sum + arr.length : sum),
+    0
+  );
 
   // List view receives original filtered entries (with dateEnd intact)
   // so it can collapse range entries into month-level summary rows
@@ -225,6 +253,21 @@ export default function ScheduleApp() {
 
       {/* ── Filter bar ── */}
       <div className={styles.filterSection}>
+        {/* Year filter */}
+        <div className={styles.yearBar} role="group" aria-label="Filter by year">
+          <span className={styles.filterLabel}>Year</span>
+          <div className={styles.yearChips}>
+            {availableYears.map(y => (
+              <button
+                key={y}
+                className={`${styles.yearChip} ${selectedYear === y ? styles.yearChipActive : ""}`}
+                onClick={() => handleSelectYear(y)}
+                aria-pressed={selectedYear === y}
+              >{y}</button>
+            ))}
+          </div>
+        </div>
+
         {/* Class chips */}
         <div className={styles.filterBar}>
           <span className={styles.filterLabel}>
@@ -299,7 +342,7 @@ export default function ScheduleApp() {
                 </span>
               ))}
             </div>
-            <span className={styles.sessionTotal}>{totalSessions} session{totalSessions !== 1 ? "s" : ""}</span>
+            <span className={styles.sessionTotal}>{totalSessions} session{totalSessions !== 1 ? "s" : ""} in {selectedYear}</span>
           </div>
         )}
       </div>
