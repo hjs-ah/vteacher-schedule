@@ -271,3 +271,45 @@
   .dayCell { height: 42px; }
   .emptyCell { height: 42px; }
 }
+
+/* ── Dark mode: keep the calendar itself light for readability ──
+   Re-declares the light palette on the card so every child (day cells,
+   tooltip, labels, accent colors) picks up light-surface values. */
+:global([data-theme="dark"]) .card {
+  --bg-primary: #f4f8ff;
+  --bg-secondary: #e3ebf8;
+  --bg-tertiary: #d3dff3;
+  --bg-card: #f4f8ff;
+  --bg-hover: #dfe9f8;
+
+  --text-primary: #0b1a36;
+  --text-secondary: #2d3f63;
+  --text-muted: #52627f;
+
+  --border-light: rgba(11, 26, 54, 0.16);
+  --border-medium: rgba(11, 26, 54, 0.32);
+
+  --accent-bible-study: #3B6D11;
+  --accent-bible-study-bg: #EAF3DE;
+  --accent-bible-study-text: #27500A;
+  --accent-bible-foundation: #185FA5;
+  --accent-bible-foundation-bg: #E6F1FB;
+  --accent-bible-foundation-text: #0C447C;
+  --accent-discipleship: #3C3489;
+  --accent-discipleship-bg: #EEEDFE;
+  --accent-discipleship-text: #26215C;
+  --accent-new-members: #BA7517;
+  --accent-new-members-bg: #FAEEDA;
+  --accent-new-members-text: #633806;
+  --accent-mens-study: #993C1D;
+  --accent-mens-study-bg: #FAECE7;
+  --accent-mens-study-text: #4A1B0C;
+  --accent-preaching: #854F0B;
+  --accent-preaching-bg: #FAEEDA;
+  --accent-preaching-text: #633806;
+  --accent-testimony: #993556;
+  --accent-testimony-bg: #FBEAF0;
+  --accent-testimony-text: #4B1528;
+
+  border-color: rgba(150, 185, 255, 0.35);
+}
